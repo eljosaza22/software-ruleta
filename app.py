@@ -12,7 +12,7 @@ st.set_page_config(page_title="Bot de Ruleta Profesional v3.0", layout="wide")
 
 st.markdown("""
     <style>
-    /* Fondo general gris estilo software de escritorio clásico */
+    /* Fondo general gris estilo software Windows clásico */
     .stApp {
         background-color: #d4d0c8;
         font-family: 'Tahoma', 'Segoe UI', sans-serif;
@@ -151,7 +151,7 @@ def guardar_tiro_en_nube(crupier, numero):
             pass
 
 # ==========================================
-# 3. MEMORIA DE SESIÓN (ESTADO DEL SISTEMA)
+# 3. MEMORIA DE SESIÓN (41 CRUPIERES REALES DEL EXCEL)
 # ==========================================
 if 'historial_sesion' not in st.session_state:
     st.session_state.historial_sesion = []
@@ -160,9 +160,16 @@ if 'balance' not in st.session_state:
 if 'caceria_activa' not in st.session_state:
     st.session_state.caceria_activa = None
 if 'lista_crupieres' not in st.session_state:
-    st.session_state.lista_crupieres = sorted([
-        'DARIA', 'VIKTORIJA', 'DIANA', 'JOSSELYN', 'NIA', 'KATE', 'KEITA', 'LUNA', 'LAURA', 'JEVGENIJA'
-    ])
+    # Lista completa extraída del archivo Excel de 10,556 tiradas
+    st.session_state.lista_crupieres = [
+        'AMANDA', 'ANASTASIJA', 'ANZELIKA', 'AURORA', 'DARIA', 'DIANA', 
+        'ELIYA', 'ELIZABETH', 'EMILY', 'EMMA', 'EVELINA', 'GINTA', 
+        'INNA', 'JASMINE', 'JEVGENIJA', 'JOSSELYN', 'KARALINA', 'KATE', 
+        'KEITA', 'KSENIIA', 'LANA', 'LAURA', 'LIA', 'LINA', 'LISA', 
+        'LOLA', 'LOLIJA', 'LUIZA', 'LUNA', 'MADARA', 'MARGARITA', 'MARIJA', 
+        'MERY', 'NIA', 'RAYA', 'STEPHA', 'SVETLANA', 'VALERY', 'VIKTORIJA', 
+        'XENIA', 'ZOJA'
+    ]
 if 'balance_history' not in st.session_state:
     st.session_state.balance_history = [0.0]
 
@@ -188,7 +195,7 @@ def render_btn_num(n, crupier_act):
         st.rerun()
 
 # ==========================================
-# 5. ALGORITMO MATEMÁTICO OPTIMIZADO
+# 5. ALGORITMO MATEMÁTICO DE ESCANEO
 # ==========================================
 def escanear_oportunidades(tiros):
     if len(tiros) < 15:
@@ -392,7 +399,13 @@ with tab_main:
 # PESTAÑA DE CONFIGURACIÓN Y CRUPIERES
 with tab_settings:
     st.subheader("Gestión de Crupieres y Parámetros")
-    nuevo_crupier = st.text_input("Nombre del Nuevo Crupier")
+    
+    st.markdown("**Lista de Crupieres Registrados en la Base de Datos (41):**")
+    st.write(", ".join(st.session_state.lista_crupieres))
+    
+    st.divider()
+    
+    nuevo_crupier = st.text_input("Añadir Otro Crupier Nuevo")
     if st.button("Registrar Crupier"):
         if nuevo_crupier and nuevo_crupier.upper() not in st.session_state.lista_crupieres:
             st.session_state.lista_crupieres.append(nuevo_crupier.upper())
