@@ -150,6 +150,15 @@ def guardar_tiro_en_nube(crupier, numero):
         except Exception:
             pass
 
+def borrar_ultimo_tiro_en_nube():
+    if sheet:
+        try:
+            filas = sheet.get_all_values()
+            if len(filas) > 1:  # Preserva la fila de encabezados
+                sheet.delete_rows(len(filas))
+        except Exception:
+            pass
+
 # ==========================================
 # 3. MEMORIA DE SESIÓN (41 CRUPIERES REALES DEL EXCEL)
 # ==========================================
@@ -160,7 +169,6 @@ if 'balance' not in st.session_state:
 if 'caceria_activa' not in st.session_state:
     st.session_state.caceria_activa = None
 if 'lista_crupieres' not in st.session_state:
-    # Lista completa extraída del archivo Excel de 10,556 tiradas
     st.session_state.lista_crupieres = [
         'AMANDA', 'ANASTASIJA', 'ANZELIKA', 'AURORA', 'DARIA', 'DIANA', 
         'ELIYA', 'ELIZABETH', 'EMILY', 'EMMA', 'EVELINA', 'GINTA', 
@@ -294,6 +302,7 @@ with tab_main:
             if st.button("Deshacer ↩️", key="undo_btn"):
                 if st.session_state.historial_sesion:
                     st.session_state.historial_sesion.pop()
+                    borrar_ultimo_tiro_en_nube()  # Borra también en Google Sheets
                     if st.session_state.caceria_activa:
                         st.session_state.caceria_activa['tiros_transcurridos'] = max(0, st.session_state.caceria_activa['tiros_transcurridos'] - 1)
                     st.rerun()
@@ -353,7 +362,7 @@ with tab_main:
         with c_avoid:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
             st.markdown("**❌ NÚMEROS A EVITAR (FRÍOS)**")
-            st.warning("Evitar números con ausencia sostenida sin activación de gatillo.")
+            st.warning("Evitar números con ausencia sustained sin activación de gatillo.")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
