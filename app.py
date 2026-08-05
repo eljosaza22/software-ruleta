@@ -98,7 +98,7 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* EFECTO HOVER (Al pasar el mouse) */
+    /* EFECTO HOVER */
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button:hover {
@@ -166,11 +166,10 @@ if 'lista_crupieres' not in st.session_state:
 if 'balance_history' not in st.session_state:
     st.session_state.balance_history = [0.0]
 
-# Set de Números Rojos para consulta rápida
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. FUNCIONES PARA RENDERIZAR BOTONES CON ESTILO
+# 4. FUNCIONES DE RENDERIZADO
 # ==========================================
 def render_btn_0(crupier_act):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
@@ -243,7 +242,7 @@ def registrar_tiro(num, crupier_actual):
             }
 
 # ==========================================
-# 6. ESTRUCTURA INTERFAZ "ROULETTE BOT PRO 3.0"
+# 6. INTERFAZ ROULETTE BOT PRO 3.0
 # ==========================================
 
 tab_main, tab_settings, tab_stats, tab_about = st.tabs(["Main", "Settings & Crupieres", "Statistics", "About"])
@@ -251,7 +250,7 @@ tab_main, tab_settings, tab_stats, tab_about = st.tabs(["Main", "Settings & Crup
 with tab_main:
     col_left, col_right = st.columns([1, 3])
     
-    # PANEL LATERAL IZQUIERDO (Controles)
+    # PANEL LATERAL IZQUIERDO
     with col_left:
         st.markdown("### ⚙️ Controls")
         
@@ -287,9 +286,8 @@ with tab_main:
                         st.session_state.caceria_activa['tiros_transcurridos'] = max(0, st.session_state.caceria_activa['tiros_transcurridos'] - 1)
                     st.rerun()
 
-    # TAPETE PRINCIPAL DE LA RULETA (Verde)
+    # TAPETE PRINCIPAL DE LA RULETA
     with col_right:
-        # Marcador para envolver toda la mesa en el tapete verde
         st.markdown('<div class="green-felt-table"></div>', unsafe_allow_html=True)
         
         c_zero, c_board = st.columns([1, 12])
@@ -346,7 +344,50 @@ with tab_main:
             st.warning("Evitar 30, 20 y 3 sin gatillos activos.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-# Pestaña de Configuración y Crupieres
+        st.divider()
+
+        # ==========================================
+        # 7. NUEVA SECCIÓN: VERIFICACIÓN Y ESTADÍSTICAS EN VIVO (TABLA PRINCIPAL)
+        # ==========================================
+        st.markdown("### 📜 Verificación y Historial de Tiradas en Vivo")
+        
+        if st.session_state.historial_sesion:
+            col_tabla_hist, col_stats_resumen = st.columns([2, 1])
+            
+            with col_tabla_hist:
+                # Generar DataFrame ordenado de más reciente a más antiguo
+                df_hist_main = pd.DataFrame(list(reversed(st.session_state.historial_sesion)))
+                df_hist_main.index = range(len(df_hist_main), 0, -1)
+                df_hist_main.columns = ['Crupier', 'Número', 'Hora']
+                
+                st.dataframe(
+                    df_hist_main[['Hora', 'Crupier', 'Número']], 
+                    height=200, 
+                    use_container_width=True
+                )
+                
+            with col_stats_resumen:
+                total_tiros = len(st.session_state.historial_sesion)
+                nums_list = [t['numero'] for t in st.session_state.historial_sesion]
+                rojos_cnt = sum(1 for n in nums_list if n in numeros_rojos)
+                negros_cnt = sum(1 for n in nums_list if n not in numeros_rojos and n != 0)
+                ceros_cnt = sum(1 for n in nums_list if n == 0)
+                
+                pct_rojo = (rojos_cnt / total_tiros * 100) if total_tiros > 0 else 0
+                pct_negro = (negros_cnt / total_tiros * 100) if total_tiros > 0 else 0
+                pct_cero = (ceros_cnt / total_tiros * 100) if total_tiros > 0 else 0
+                
+                st.markdown('<div class="status-box">', unsafe_allow_html=True)
+                st.markdown("**📊 Resumen de Tiradas:**")
+                st.write(f"• **Total Tiradas:** {total_tiros}")
+                st.write(f"• 🔴 **Rojos:** {rojos_cnt} ({pct_rojo:.1f}%)")
+                st.write(f"• ⬛ **Negros:** {negros_cnt} ({pct_negro:.1f}%)")
+                st.write(f"• 🟢 **Ceros (0):** {ceros_cnt} ({pct_cero:.1f}%)")
+                st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("Aún no has ingresado tiradas. Presiona cualquier número del tapete arriba para comenzar la verificación en vivo.")
+
+# Pestaña de Configuración
 with tab_settings:
     st.subheader("Gestión de Crupieres")
     nuevo_crupier = st.text_input("Añadir Nuevo Crupier")
@@ -357,9 +398,9 @@ with tab_settings:
             st.success(f"Crupier {nuevo_crupier.upper()} registrado exitosamente.")
             st.rerun()
 
-# Pestaña de Estadísticas
+# Pestaña de Estadísticas Completas
 with tab_stats:
-    st.subheader("Historial de la Sesión Activa")
+    st.subheader("Historial Completo de la Sesión")
     if st.session_state.historial_sesion:
         df_hist = pd.DataFrame(st.session_state.historial_sesion)
         st.dataframe(df_hist, use_container_width=True)
