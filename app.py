@@ -6,13 +6,13 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 # ==========================================
-# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO
+# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Roulette Bot Pro 3.0", layout="wide")
+st.set_page_config(page_title="Bot de Ruleta Profesional v3.0", layout="wide")
 
 st.markdown("""
     <style>
-    /* Fondo general gris estilo software Windows clásico */
+    /* Fondo general gris estilo software de escritorio clásico */
     .stApp {
         background-color: #d4d0c8;
         font-family: 'Tahoma', 'Segoe UI', sans-serif;
@@ -151,7 +151,7 @@ def guardar_tiro_en_nube(crupier, numero):
             pass
 
 # ==========================================
-# 3. MEMORIA DE SESIÓN (Session State)
+# 3. MEMORIA DE SESIÓN (ESTADO DEL SISTEMA)
 # ==========================================
 if 'historial_sesion' not in st.session_state:
     st.session_state.historial_sesion = []
@@ -169,7 +169,7 @@ if 'balance_history' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. FUNCIONES DE RENDERIZADO
+# 4. FUNCIONES DE RENDERIZADO DE BOTONES
 # ==========================================
 def render_btn_0(crupier_act):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
@@ -188,7 +188,7 @@ def render_btn_num(n, crupier_act):
         st.rerun()
 
 # ==========================================
-# 5. ALGORITMO ESCÁNER (Modo Conservador)
+# 5. ALGORITMO MATEMÁTICO OPTIMIZADO
 # ==========================================
 def escanear_oportunidades(tiros):
     if len(tiros) < 15:
@@ -242,51 +242,56 @@ def registrar_tiro(num, crupier_actual):
             }
 
 # ==========================================
-# 6. INTERFAZ ROULETTE BOT PRO 3.0
+# 6. INTERFAZ DE USUARIO 100% EN ESPAÑOL
 # ==========================================
 
-tab_main, tab_settings, tab_stats, tab_about = st.tabs(["Main", "Settings & Crupieres", "Statistics", "About"])
+tab_main, tab_settings, tab_stats, tab_about = st.tabs([
+    "Panel Principal", 
+    "Configuración y Crupieres", 
+    "Estadísticas Generales", 
+    "Acerca del Sistema"
+])
 
 with tab_main:
     col_left, col_right = st.columns([1, 3])
     
-    # PANEL LATERAL IZQUIERDO
+    # PANEL LATERAL IZQUIERDO (CONTROLES)
     with col_left:
-        st.markdown("### ⚙️ Controls")
+        st.markdown("### ⚙️ Panel de Control")
         
-        crupier_actual = st.selectbox("-Select Crupier-", st.session_state.lista_crupieres)
-        modo_actual = st.selectbox("-Select Mode-", ["Modo Conservador (1 Num)", "Modo Agresivo (Desactivado)"])
+        crupier_actual = st.selectbox("— Seleccionar Crupier —", st.session_state.lista_crupieres)
+        modo_actual = st.selectbox("— Seleccionar Estrategia —", ["Modo Conservador (1 Número)", "Modo Adaptativo (En Desarrollo)"])
         
         tiros_crupier = sum(1 for t in st.session_state.historial_sesion if t['crupier'] == crupier_actual)
-        st.caption(f"Turno Crupier: **{tiros_crupier}/50 tiros**")
+        st.caption(f"Progreso del Crupier: **{tiros_crupier} / 50 tiradas**")
         if tiros_crupier >= 40:
-            st.error("⚠️ Alerta: Cambio de Crupier Cercano")
+            st.error("⚠️ Alerta: Cambio de Crupier Inminente")
             
         st.divider()
         
-        st.markdown("**Session Performance**")
-        df_chart = pd.DataFrame({'Units': st.session_state.balance_history})
+        st.markdown("**Rendimiento de la Sesión (Unidades)**")
+        df_chart = pd.DataFrame({'Unidades': st.session_state.balance_history})
         st.line_chart(df_chart, height=120)
         
         st.divider()
         
         col_b1, col_b2 = st.columns(2)
         with col_b1:
-            if st.button("Reset", key="reset_btn"):
+            if st.button("Reiniciar", key="reset_btn"):
                 st.session_state.historial_sesion = []
                 st.session_state.balance = 0.0
                 st.session_state.balance_history = [0.0]
                 st.session_state.caceria_activa = None
                 st.rerun()
         with col_b2:
-            if st.button("Undo ↩️", key="undo_btn"):
+            if st.button("Deshacer ↩️", key="undo_btn"):
                 if st.session_state.historial_sesion:
                     st.session_state.historial_sesion.pop()
                     if st.session_state.caceria_activa:
                         st.session_state.caceria_activa['tiros_transcurridos'] = max(0, st.session_state.caceria_activa['tiros_transcurridos'] - 1)
                     st.rerun()
 
-    # TAPETE PRINCIPAL DE LA RULETA
+    # TAPETE PRINCIPAL DE LA RULETA (VERDE)
     with col_right:
         st.markdown('<div class="green-felt-table"></div>', unsafe_allow_html=True)
         
@@ -324,7 +329,7 @@ with tab_main:
         with c_bal:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
             st.metric("Balance Total", f"{st.session_state.balance:.2f} U")
-            st.caption(f"Tiros en sesión: {len(st.session_state.historial_sesion)}")
+            st.caption(f"Tiros en esta sesión: {len(st.session_state.historial_sesion)}")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_pred:
@@ -335,27 +340,24 @@ with tab_main:
                 tiro_n = st.session_state.caceria_activa['tiros_transcurridos'] + 1
                 st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Tiro {tiro_n} de 35)")
             else:
-                st.info("Escaneando patrones de mesa...")
+                st.info("Escaneando patrones de mesa en tiempo real...")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_avoid:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**❌ EVITAR / FRÍOS**")
-            st.warning("Evitar 30, 20 y 3 sin gatillos activos.")
+            st.markdown("**❌ NÚMEROS A EVITAR (FRÍOS)**")
+            st.warning("Evitar números con ausencia sostenida sin activación de gatillo.")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
 
-        # ==========================================
-        # 7. NUEVA SECCIÓN: VERIFICACIÓN Y ESTADÍSTICAS EN VIVO (TABLA PRINCIPAL)
-        # ==========================================
-        st.markdown("### 📜 Verificación y Historial de Tiradas en Vivo")
+        # VERIFICACIÓN Y HISTORIAL EN VIVO
+        st.markdown("### 📜 Verificación e Historial de Tiradas en Vivo")
         
         if st.session_state.historial_sesion:
             col_tabla_hist, col_stats_resumen = st.columns([2, 1])
             
             with col_tabla_hist:
-                # Generar DataFrame ordenado de más reciente a más antiguo
                 df_hist_main = pd.DataFrame(list(reversed(st.session_state.historial_sesion)))
                 df_hist_main.index = range(len(df_hist_main), 0, -1)
                 df_hist_main.columns = ['Crupier', 'Número', 'Hora']
@@ -379,35 +381,35 @@ with tab_main:
                 
                 st.markdown('<div class="status-box">', unsafe_allow_html=True)
                 st.markdown("**📊 Resumen de Tiradas:**")
-                st.write(f"• **Total Tiradas:** {total_tiros}")
+                st.write(f"• **Total Registrados:** {total_tiros}")
                 st.write(f"• 🔴 **Rojos:** {rojos_cnt} ({pct_rojo:.1f}%)")
                 st.write(f"• ⬛ **Negros:** {negros_cnt} ({pct_negro:.1f}%)")
                 st.write(f"• 🟢 **Ceros (0):** {ceros_cnt} ({pct_cero:.1f}%)")
                 st.markdown('</div>', unsafe_allow_html=True)
         else:
-            st.info("Aún no has ingresado tiradas. Presiona cualquier número del tapete arriba para comenzar la verificación en vivo.")
+            st.info("No hay tiradas registradas. Ingresa los números directamente desde el tapete superior.")
 
-# Pestaña de Configuración
+# PESTAÑA DE CONFIGURACIÓN Y CRUPIERES
 with tab_settings:
-    st.subheader("Gestión de Crupieres")
-    nuevo_crupier = st.text_input("Añadir Nuevo Crupier")
-    if st.button("Guardar Crupier"):
+    st.subheader("Gestión de Crupieres y Parámetros")
+    nuevo_crupier = st.text_input("Nombre del Nuevo Crupier")
+    if st.button("Registrar Crupier"):
         if nuevo_crupier and nuevo_crupier.upper() not in st.session_state.lista_crupieres:
             st.session_state.lista_crupieres.append(nuevo_crupier.upper())
             st.session_state.lista_crupieres.sort()
-            st.success(f"Crupier {nuevo_crupier.upper()} registrado exitosamente.")
+            st.success(f"Crupier {nuevo_crupier.upper()} añadido a la base de datos.")
             st.rerun()
 
-# Pestaña de Estadísticas Completas
+# PESTAÑA DE ESTADÍSTICAS GENERALES
 with tab_stats:
-    st.subheader("Historial Completo de la Sesión")
+    st.subheader("Registro Completo de la Sesión")
     if st.session_state.historial_sesion:
         df_hist = pd.DataFrame(st.session_state.historial_sesion)
         st.dataframe(df_hist, use_container_width=True)
     else:
-        st.write("No hay tiradas en esta sesión.")
+        st.write("Aún no existen registros en la sesión activa.")
 
-# Pestaña Acerca de
+# PESTAÑA ACERCA DEL SISTEMA
 with tab_about:
-    st.markdown("### Roulette Bot Pro 3.0 - Custom Edition")
-    st.write("Sistema optimizado para el Modo Conservador con persistencia en Google Sheets Cloud.")
+    st.markdown("### Bot de Ruleta Profesional v3.0")
+    st.write("Motor analítico cuantitativo optimizado para la detección de anomalías estocásticas y sincronización continua en la nube.")
