@@ -154,13 +154,13 @@ def borrar_ultimo_tiro_en_nube():
     if sheet:
         try:
             filas = sheet.get_all_values()
-            if len(filas) > 1:  # Preserva la fila de encabezados
+            if len(filas) > 1:
                 sheet.delete_rows(len(filas))
         except Exception:
             pass
 
 # ==========================================
-# 3. MEMORIA DE SESIÓN (41 CRUPIERES REALES DEL EXCEL)
+# 3. MEMORIA DE SESIÓN (41 CRUPIERES REALES)
 # ==========================================
 if 'historial_sesion' not in st.session_state:
     st.session_state.historial_sesion = []
@@ -203,7 +203,7 @@ def render_btn_num(n, crupier_act):
         st.rerun()
 
 # ==========================================
-# 5. ALGORITMO MATEMÁTICO DE ESCANEO
+# 5. ALGORITMO MATEMÁTICO OPTIMIZADO (SL=30)
 # ==========================================
 def escanear_oportunidades(tiros):
     if len(tiros) < 15:
@@ -242,8 +242,8 @@ def registrar_tiro(num, crupier_actual):
             st.session_state.balance_history.append(st.session_state.balance)
             st.balloons()
             st.session_state.caceria_activa = None
-        elif st.session_state.caceria_activa['tiros_transcurridos'] >= 35:
-            st.session_state.balance -= 35
+        elif st.session_state.caceria_activa['tiros_transcurridos'] >= 30:  # OPTIMIZADO A 30 TIROS
+            st.session_state.balance -= 30
             st.session_state.balance_history.append(st.session_state.balance)
             st.session_state.caceria_activa = None
             
@@ -302,7 +302,7 @@ with tab_main:
             if st.button("Deshacer ↩️", key="undo_btn"):
                 if st.session_state.historial_sesion:
                     st.session_state.historial_sesion.pop()
-                    borrar_ultimo_tiro_en_nube()  # Borra también en Google Sheets
+                    borrar_ultimo_tiro_en_nube()
                     if st.session_state.caceria_activa:
                         st.session_state.caceria_activa['tiros_transcurridos'] = max(0, st.session_state.caceria_activa['tiros_transcurridos'] - 1)
                     st.rerun()
@@ -354,7 +354,7 @@ with tab_main:
             if st.session_state.caceria_activa:
                 num_caza = st.session_state.caceria_activa['numero']
                 tiro_n = st.session_state.caceria_activa['tiros_transcurridos'] + 1
-                st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Tiro {tiro_n} de 35)")
+                st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Tiro {tiro_n} de 30)")
             else:
                 st.info("Escaneando patrones de mesa en tiempo real...")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -362,7 +362,7 @@ with tab_main:
         with c_avoid:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
             st.markdown("**❌ NÚMEROS A EVITAR (FRÍOS)**")
-            st.warning("Evitar números con ausencia sustained sin activación de gatillo.")
+            st.warning("Evitar números con ausencia sostenida sin activación de gatillo.")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
@@ -408,7 +408,6 @@ with tab_main:
 # PESTAÑA DE CONFIGURACIÓN Y CRUPIERES
 with tab_settings:
     st.subheader("Gestión de Crupieres y Parámetros")
-    
     st.markdown("**Lista de Crupieres Registrados en la Base de Datos (41):**")
     st.write(", ".join(st.session_state.lista_crupieres))
     
