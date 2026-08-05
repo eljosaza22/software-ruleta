@@ -12,88 +12,103 @@ st.set_page_config(page_title="Roulette Bot Pro 3.0", layout="wide")
 
 st.markdown("""
     <style>
-    /* Fondo general gris estilo software de escritorio clásico */
+    /* Fondo general gris estilo software Windows clásico */
     .stApp {
         background-color: #d4d0c8;
         font-family: 'Tahoma', 'Segoe UI', sans-serif;
     }
     
-    /* El tapete verde de fieltro envuelve la mesa completa */
-    [data-testid="stHorizontalBlock"]:has(button[aria-label="0"]) {
-        background: linear-gradient(135deg, #0b6623 0%, #064d1a 100%) !important;
-        padding: 22px !important;
-        border-radius: 16px !important;
-        border: 4px solid #043311 !important;
-        box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 6px 12px rgba(0,0,0,0.4) !important;
-        margin-bottom: 20px !important;
+    /* Ocultar espacio vertical de los marcadores HTML */
+    [data-testid="stElementContainer"]:has(.marker-red),
+    [data-testid="stElementContainer"]:has(.marker-black),
+    [data-testid="stElementContainer"]:has(.marker-green),
+    [data-testid="stElementContainer"]:has(.green-felt-table) {
+        display: none !important;
+        height: 0px !important;
+        margin: 0px !important;
+        padding: 0px !important;
     }
 
-    /* Estilo del texto del número dentro de cada botón */
-    button[aria-label] p {
+    /* TAPETE VERDE DE FIELTRO COMPLETO */
+    [data-testid="stElementContainer"]:has(.green-felt-table) + [data-testid="stHorizontalBlock"] {
+        background: linear-gradient(135deg, #0b6623 0%, #064016 100%) !important;
+        padding: 25px 20px !important;
+        border-radius: 20px !important;
+        border: 5px solid #032b0e !important;
+        box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 8px 16px rgba(0,0,0,0.4) !important;
+        margin-bottom: 25px !important;
+        align-items: center !important;
+    }
+
+    /* BOTÓN VERDE (0) */
+    [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button {
+        background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%) !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 15px !important;
+        height: 160px !important;
+        width: 100% !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.6) !important;
+    }
+
+    [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button * {
+        color: #ffffff !important;
+        font-size: 24px !important;
+        font-weight: 900 !important;
+    }
+
+    /* BOTONES ROJOS (Círculos) */
+    [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button {
+        background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%) !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 50% !important;
+        height: 48px !important;
+        width: 48px !important;
+        min-width: 48px !important;
+        margin: 4px auto !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button * {
         color: #ffffff !important;
         font-size: 16px !important;
-        font-weight: 800 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
+        font-weight: 900 !important;
     }
 
-    /* Botón del 0 (Verde) */
-    button[aria-label="0"] {
-        background-color: #008000 !important;
-        border: 2px solid #ffffff !important;
-        border-radius: 20px !important;
-        height: 154px !important;
-        width: 100% !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.5) !important;
-    }
-    button[aria-label="0"] p {
-        font-size: 22px !important;
-    }
-
-    /* Círculos con Números ROJOS */
-    button[aria-label="1"], button[aria-label="3"], button[aria-label="5"], 
-    button[aria-label="7"], button[aria-label="9"], button[aria-label="12"], 
-    button[aria-label="14"], button[aria-label="16"], button[aria-label="18"], 
-    button[aria-label="19"], button[aria-label="21"], button[aria-label="23"], 
-    button[aria-label="25"], button[aria-label="27"], button[aria-label="30"], 
-    button[aria-label="32"], button[aria-label="34"], button[aria-label="36"] {
-        background-color: #d32f2f !important;
+    /* BOTONES NEGROS (Círculos) */
+    [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button {
+        background: linear-gradient(180deg, #424242 0%, #111111 100%) !important;
         border: 2px solid #ffffff !important;
         border-radius: 50% !important;
-        height: 46px !important;
-        width: 46px !important;
-        min-width: 46px !important;
-        margin: auto !important;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.5) !important;
+        height: 48px !important;
+        width: 48px !important;
+        min-width: 48px !important;
+        margin: 4px auto !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    /* Círculos con Números NEGROS */
-    button[aria-label="2"], button[aria-label="4"], button[aria-label="6"], 
-    button[aria-label="8"], button[aria-label="10"], button[aria-label="11"], 
-    button[aria-label="13"], button[aria-label="15"], button[aria-label="17"], 
-    button[aria-label="20"], button[aria-label="22"], button[aria-label="24"], 
-    button[aria-label="26"], button[aria-label="28"], button[aria-label="29"], 
-    button[aria-label="31"], button[aria-label="33"], button[aria-label="35"] {
-        background-color: #1a1a1a !important;
-        border: 2px solid #ffffff !important;
-        border-radius: 50% !important;
-        height: 46px !important;
-        width: 46px !important;
-        min-width: 46px !important;
-        margin: auto !important;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.5) !important;
+    [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button * {
+        color: #ffffff !important;
+        font-size: 16px !important;
+        font-weight: 900 !important;
     }
 
-    /* Efecto al pasar el cursor (Hover) */
-    button[aria-label]:hover {
-        transform: scale(1.12) !important;
-        transition: transform 0.1s ease-in-out !important;
+    /* EFECTO HOVER (Al pasar el mouse) */
+    [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button:hover,
+    [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button:hover,
+    [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button:hover {
+        transform: scale(1.15) !important;
         border-color: #ffd700 !important;
+        box-shadow: 0 0 12px #ffd700 !important;
+        transition: all 0.15s ease-in-out !important;
     }
 
-    /* Cajas de estado en la zona inferior */
+    /* Cajas de estado inferiores */
     .status-box {
         background-color: #ffffff;
         border: 2px inset #d4d0c8;
@@ -151,8 +166,30 @@ if 'lista_crupieres' not in st.session_state:
 if 'balance_history' not in st.session_state:
     st.session_state.balance_history = [0.0]
 
+# Set de Números Rojos para consulta rápida
+numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
+
 # ==========================================
-# 4. ALGORITMO ESCÁNER (Modo Conservador)
+# 4. FUNCIONES PARA RENDERIZAR BOTONES CON ESTILO
+# ==========================================
+def render_btn_0(crupier_act):
+    st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
+    if st.button("0", key="btn_0"):
+        registrar_tiro(0, crupier_act)
+        st.rerun()
+
+def render_btn_num(n, crupier_act):
+    if n in numeros_rojos:
+        st.markdown('<div class="marker-red"></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="marker-black"></div>', unsafe_allow_html=True)
+        
+    if st.button(f"{n}", key=f"btn_{n}"):
+        registrar_tiro(n, crupier_act)
+        st.rerun()
+
+# ==========================================
+# 5. ALGORITMO ESCÁNER (Modo Conservador)
 # ==========================================
 def escanear_oportunidades(tiros):
     if len(tiros) < 15:
@@ -206,7 +243,7 @@ def registrar_tiro(num, crupier_actual):
             }
 
 # ==========================================
-# 5. ESTRUCTURA INTERFAZ "ROULETTE BOT PRO 3.0"
+# 6. ESTRUCTURA INTERFAZ "ROULETTE BOT PRO 3.0"
 # ==========================================
 
 tab_main, tab_settings, tab_stats, tab_about = st.tabs(["Main", "Settings & Crupieres", "Statistics", "About"])
@@ -252,39 +289,35 @@ with tab_main:
 
     # TAPETE PRINCIPAL DE LA RULETA (Verde)
     with col_right:
-        numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
+        # Marcador para envolver toda la mesa en el tapete verde
+        st.markdown('<div class="green-felt-table"></div>', unsafe_allow_html=True)
         
         c_zero, c_board = st.columns([1, 12])
         
         with c_zero:
-            if st.button("0", key="btn_0"):
-                registrar_tiro(0, crupier_actual)
-                st.rerun()
+            render_btn_0(crupier_actual)
             
         with c_board:
             # Fila 1 (3 a 36)
             cols_f1 = st.columns(12)
             nums_f1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
             for i, n in enumerate(nums_f1):
-                if cols_f1[i].button(f"{n}", key=f"btn_{n}"):
-                    registrar_tiro(n, crupier_actual)
-                    st.rerun()
+                with cols_f1[i]:
+                    render_btn_num(n, crupier_actual)
 
             # Fila 2 (2 a 35)
             cols_f2 = st.columns(12)
             nums_f2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
             for i, n in enumerate(nums_f2):
-                if cols_f2[i].button(f"{n}", key=f"btn_{n}"):
-                    registrar_tiro(n, crupier_actual)
-                    st.rerun()
+                with cols_f2[i]:
+                    render_btn_num(n, crupier_actual)
 
             # Fila 3 (1 a 34)
             cols_f3 = st.columns(12)
             nums_f3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
             for i, n in enumerate(nums_f3):
-                if cols_f3[i].button(f"{n}", key=f"btn_{n}"):
-                    registrar_tiro(n, crupier_actual)
-                    st.rerun()
+                with cols_f3[i]:
+                    render_btn_num(n, crupier_actual)
         
         # PANELES INFERIORES DE ESTADO
         st.write("")
