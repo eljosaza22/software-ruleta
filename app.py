@@ -6,63 +6,100 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 # ==========================================
-# 1. ESTILO Y CONFIGURACIÓN "ROULETTE BOT PRO"
+# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO
 # ==========================================
 st.set_page_config(page_title="Roulette Bot Pro 3.0", layout="wide")
 
-# Estilos CSS para emular el software clásico (Fieltro verde, botones ovalados y panel retro)
 st.markdown("""
     <style>
-    /* Fondo general gris tipo software clásico */
+    /* Fondo general gris estilo software de escritorio clásico */
     .stApp {
         background-color: #d4d0c8;
         font-family: 'Tahoma', 'Segoe UI', sans-serif;
     }
     
-    /* Tapete verde de la ruleta */
-    .felt-board {
-        background-color: #0b6623;
-        border: 4px solid #064016;
-        border-radius: 12px;
-        padding: 15px;
-        box-shadow: inset 0 0 10px #000000;
+    /* El tapete verde de fieltro envuelve la mesa completa */
+    [data-testid="stHorizontalBlock"]:has(button[aria-label="0"]) {
+        background: linear-gradient(135deg, #0b6623 0%, #064d1a 100%) !important;
+        padding: 22px !important;
+        border-radius: 16px !important;
+        border: 4px solid #043311 !important;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 6px 12px rgba(0,0,0,0.4) !important;
+        margin-bottom: 20px !important;
     }
-    
-    /* Botones de números en el tapete */
-    div.stButton > button {
-        border-radius: 50% !important;
-        height: 48px !important;
-        width: 48px !important;
-        font-weight: bold !important;
+
+    /* Estilo del texto del número dentro de cada botón */
+    button[aria-label] p {
+        color: #ffffff !important;
         font-size: 16px !important;
-        color: white !important;
-        border: 2px solid #ffd700 !important;
-        margin: auto !important;
-        display: block !important;
-        box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        font-weight: 800 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
     }
-    
-    /* Estilos por color de botón */
-    .red-num > button { background-color: #cc0000 !important; }
-    .black-num > button { background-color: #1a1a1a !important; }
-    .green-num > button { background-color: #008000 !important; height: 110px !important; border-radius: 20px !important; }
-    
-    /* Botones de acción lateral */
-    .action-btn > button {
-        border-radius: 4px !important;
-        height: 35px !important;
+
+    /* Botón del 0 (Verde) */
+    button[aria-label="0"] {
+        background-color: #008000 !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 20px !important;
+        height: 154px !important;
         width: 100% !important;
-        background-color: #e1e1e1 !important;
-        color: black !important;
-        border: 1px solid #7f9db9 !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5) !important;
     }
-    
-    /* Cajas de Estado e Infecciones */
+    button[aria-label="0"] p {
+        font-size: 22px !important;
+    }
+
+    /* Círculos con Números ROJOS */
+    button[aria-label="1"], button[aria-label="3"], button[aria-label="5"], 
+    button[aria-label="7"], button[aria-label="9"], button[aria-label="12"], 
+    button[aria-label="14"], button[aria-label="16"], button[aria-label="18"], 
+    button[aria-label="19"], button[aria-label="21"], button[aria-label="23"], 
+    button[aria-label="25"], button[aria-label="27"], button[aria-label="30"], 
+    button[aria-label="32"], button[aria-label="34"], button[aria-label="36"] {
+        background-color: #d32f2f !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 50% !important;
+        height: 46px !important;
+        width: 46px !important;
+        min-width: 46px !important;
+        margin: auto !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.5) !important;
+    }
+
+    /* Círculos con Números NEGROS */
+    button[aria-label="2"], button[aria-label="4"], button[aria-label="6"], 
+    button[aria-label="8"], button[aria-label="10"], button[aria-label="11"], 
+    button[aria-label="13"], button[aria-label="15"], button[aria-label="17"], 
+    button[aria-label="20"], button[aria-label="22"], button[aria-label="24"], 
+    button[aria-label="26"], button[aria-label="28"], button[aria-label="29"], 
+    button[aria-label="31"], button[aria-label="33"], button[aria-label="35"] {
+        background-color: #1a1a1a !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 50% !important;
+        height: 46px !important;
+        width: 46px !important;
+        min-width: 46px !important;
+        margin: auto !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.5) !important;
+    }
+
+    /* Efecto al pasar el cursor (Hover) */
+    button[aria-label]:hover {
+        transform: scale(1.12) !important;
+        transition: transform 0.1s ease-in-out !important;
+        border-color: #ffd700 !important;
+    }
+
+    /* Cajas de estado en la zona inferior */
     .status-box {
         background-color: #ffffff;
-        border: 2px inset #ffffff;
-        padding: 10px;
-        border-radius: 4px;
+        border: 2px inset #d4d0c8;
+        padding: 12px;
+        border-radius: 6px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -84,7 +121,7 @@ def conectar_google_sheets():
         client = gspread.authorize(creds)
         sheet = client.open("Ruleta_Database").worksheet("Historico_Tiros")
         return sheet
-    except Exception as e:
+    except Exception:
         return None
 
 sheet = conectar_google_sheets()
@@ -172,22 +209,18 @@ def registrar_tiro(num, crupier_actual):
 # 5. ESTRUCTURA INTERFAZ "ROULETTE BOT PRO 3.0"
 # ==========================================
 
-# Pestañas Superiores Clásicas
 tab_main, tab_settings, tab_stats, tab_about = st.tabs(["Main", "Settings & Crupieres", "Statistics", "About"])
 
 with tab_main:
     col_left, col_right = st.columns([1, 3])
     
-    # ------------------------------------
     # PANEL LATERAL IZQUIERDO (Controles)
-    # ------------------------------------
     with col_left:
         st.markdown("### ⚙️ Controls")
         
         crupier_actual = st.selectbox("-Select Crupier-", st.session_state.lista_crupieres)
         modo_actual = st.selectbox("-Select Mode-", ["Modo Conservador (1 Num)", "Modo Agresivo (Desactivado)"])
         
-        # Estado del Turno del Crupier
         tiros_crupier = sum(1 for t in st.session_state.historial_sesion if t['crupier'] == crupier_actual)
         st.caption(f"Turno Crupier: **{tiros_crupier}/50 tiros**")
         if tiros_crupier >= 40:
@@ -195,14 +228,12 @@ with tab_main:
             
         st.divider()
         
-        # Gráfico de Rendimiento Minituara
         st.markdown("**Session Performance**")
         df_chart = pd.DataFrame({'Units': st.session_state.balance_history})
         st.line_chart(df_chart, height=120)
         
         st.divider()
         
-        # Botones de Control Lateral
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             if st.button("Reset", key="reset_btn"):
@@ -219,70 +250,50 @@ with tab_main:
                         st.session_state.caceria_activa['tiros_transcurridos'] = max(0, st.session_state.caceria_activa['tiros_transcurridos'] - 1)
                     st.rerun()
 
-    # ------------------------------------
     # TAPETE PRINCIPAL DE LA RULETA (Verde)
-    # ------------------------------------
     with col_right:
-        st.markdown('<div class="felt-board">', unsafe_allow_html=True)
-        
         numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
         
-        # Fila Superior: Cero + Filas Tradicionales de la Mesa (3 a 36, 2 a 35, 1 a 34)
         c_zero, c_board = st.columns([1, 12])
         
         with c_zero:
-            st.markdown('<div class="green-num">', unsafe_allow_html=True)
             if st.button("0", key="btn_0"):
                 registrar_tiro(0, crupier_actual)
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
             
         with c_board:
-            # Fila 1 (Números: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36)
+            # Fila 1 (3 a 36)
             cols_f1 = st.columns(12)
             nums_f1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
             for i, n in enumerate(nums_f1):
-                cls = "red-num" if n in numeros_rojos else "black-num"
-                cols_f1[i].markdown(f'<div class="{cls}">', unsafe_allow_html=True)
                 if cols_f1[i].button(f"{n}", key=f"btn_{n}"):
                     registrar_tiro(n, crupier_actual)
                     st.rerun()
-                cols_f1[i].markdown('</div>', unsafe_allow_html=True)
 
-            # Fila 2 (Números: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35)
+            # Fila 2 (2 a 35)
             cols_f2 = st.columns(12)
             nums_f2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
             for i, n in enumerate(nums_f2):
-                cls = "red-num" if n in numeros_rojos else "black-num"
-                cols_f2[i].markdown(f'<div class="{cls}">', unsafe_allow_html=True)
                 if cols_f2[i].button(f"{n}", key=f"btn_{n}"):
                     registrar_tiro(n, crupier_actual)
                     st.rerun()
-                cols_f2[i].markdown('</div>', unsafe_allow_html=True)
 
-            # Fila 3 (Números: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34)
+            # Fila 3 (1 a 34)
             cols_f3 = st.columns(12)
             nums_f3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
             for i, n in enumerate(nums_f3):
-                cls = "red-num" if n in numeros_rojos else "black-num"
-                cols_f3[i].markdown(f'<div class="{cls}">', unsafe_allow_html=True)
                 if cols_f3[i].button(f"{n}", key=f"btn_{n}"):
                     registrar_tiro(n, crupier_actual)
                     st.rerun()
-                cols_f3[i].markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
         
-        # ------------------------------------
-        # PANELES INFERIORES DE ESTADO Y PREDICCIÓN
-        # ------------------------------------
+        # PANELES INFERIORES DE ESTADO
         st.write("")
         c_bal, c_pred, c_avoid = st.columns([1.5, 2.5, 2])
         
         with c_bal:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
             st.metric("Balance Total", f"{st.session_state.balance:.2f} U")
-            st.caption(f"Tiros registrados en sesión: {len(st.session_state.historial_sesion)}")
+            st.caption(f"Tiros en sesión: {len(st.session_state.historial_sesion)}")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_pred:
