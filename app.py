@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Auto-Optimizado v4.2", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Auto-Optimizado v4.3", layout="wide")
 
 st.markdown("""
     <style>
@@ -185,9 +185,8 @@ if 'balance_history' not in st.session_state:
 crupieres_top = {'EMMA', 'NIA', 'KEITA', 'LISA', 'LUNA', 'JEVGENIJA', 'LOLIJA', 'KATE', 'JOSSELYN', 'AMANDA', 'KARALINA', 'ANZELIKA', 'LUIZA', 'ELIYA', 'JASMINE'}
 crupieres_toxicos = {'LOLA', 'EMILY', 'VIKTORIJA', 'DARIA', 'LANA', 'INNA', 'LAURA', 'MARGARITA', 'DIANA', 'KSENIIA'}
 
-# Diccionario de Aprendizaje Dinámico por Crupier (Auto-Optimización)
 if 'crupier_aprendizaje' not in st.session_state:
-    st.session_state.crupier_aprendizaje = {} # crupier -> {'wins': 0, 'losses': 0}
+    st.session_state.crupier_aprendizaje = {}
 
 if 'crupier_anterior_counts' not in st.session_state:
     st.session_state.crupier_anterior_counts = {}
@@ -203,36 +202,15 @@ if 'crupier_activo' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. RENDERIZADO DE BOTONES
-# ==========================================
-def render_btn_0(crupier_act):
-    st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
-    if st.button("0", key="btn_0"):
-        registrar_tiro(0, crupier_act)
-        st.rerun()
-
-def render_btn_num(n, crupier_act):
-    if n in numeros_rojos:
-        st.markdown('<div class="marker-red"></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="marker-black"></div>', unsafe_allow_html=True)
-        
-    if st.button(f"{n}", key=f"btn_{n}"):
-        registrar_tiro(n, crupier_act)
-        st.rerun()
-
-# ==========================================
-# 5. MOTOR ADAPTATIVO CON AUTO-OPTIMIZACIÓN
+# 4. MOTOR ADAPTATIVO CON AUTO-OPTIMIZACIÓN
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
-    # Inicializar registro de aprendizaje si no existe
     if crupier not in st.session_state.crupier_aprendizaje:
         st.session_state.crupier_aprendizaje[crupier] = {'wins': 0, 'losses': 0}
         
     stats = st.session_state.crupier_aprendizaje[crupier]
     total_intentos = stats['wins'] + stats['losses']
     
-    # Auto-Optimización Dinámica: Si en esta sesión el crupier acumula más derrotas que victorias, se bloquea automáticamente
     if total_intentos >= 2 and (stats['wins'] / total_intentos) < 0.35:
         return False, "Bloqueado por Auto-Optimización (Bajo rendimiento en sesión)"
 
@@ -314,7 +292,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
             ganancia = 36 - costo
             st.session_state.balance += ganancia
             st.session_state.balance_history.append(st.session_state.balance)
-            st.session_state.crupier_aprendizaje[crupier_actual]['wins'] += 1 # Auto-Optimización: Registra acierto
+            st.session_state.crupier_aprendizaje[crupier_actual]['wins'] += 1
             st.balloons()
             
             if caza['estrategia'] == 1:
@@ -330,7 +308,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
                 st.session_state.balance -= limite
                 st.session_state.balance_history.append(st.session_state.balance)
                 st.session_state.shift_losses += 1
-                st.session_state.crupier_aprendizaje[crupier_actual]['losses'] += 1 # Auto-Optimización: Registra fallo
+                st.session_state.crupier_aprendizaje[crupier_actual]['losses'] += 1
             else:
                 cacerias_restantes.append(caza)
                 
@@ -344,6 +322,25 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
             'estrategia': strat_det,
             'tiros_transcurridos': 0
         })
+
+# ==========================================
+# 5. RENDERIZADO DE BOTONES CON MODO_FILTRO
+# ==========================================
+def render_btn_0(crupier_act, modo_f):
+    st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
+    if st.button("0", key="btn_0"):
+        registrar_tiro(0, crupier_act, modo_f)
+        st.rerun()
+
+def render_btn_num(n, crupier_act, modo_f):
+    if n in numeros_rojos:
+        st.markdown('<div class="marker-red"></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="marker-black"></div>', unsafe_allow_html=True)
+        
+    if st.button(f"{n}", key=f"btn_{n}"):
+        registrar_tiro(n, crupier_act, modo_f)
+        st.rerun()
 
 # ==========================================
 # 6. INTERFAZ DE USUARIO 100% EN ESPAÑOL
@@ -364,13 +361,11 @@ with tab_main:
         
         crupier_actual = st.selectbox("— Seleccionar Crupier Activo —", st.session_state.lista_crupieres)
         
-        # Selector de Filtro de Crupieres solicitado
         modo_filtro = st.selectbox(
             "— Estrategia de Selección —", 
             ["🌐 Todos los Crupieres", "🛡️ Filtro Anti-Tóxicos", "🎯 Modo Elite (Top 15 Sniper)"]
         )
         
-        # Validación de Estado del Crupier actual según filtro y auto-optimización
         permitido, motivo_estado = evaluar_permiso_crupier(crupier_actual, modo_filtro)
         if permitido:
             if crupier_actual in crupieres_top:
@@ -422,26 +417,26 @@ with tab_main:
         c_zero, c_board = st.columns([1, 12])
         
         with c_zero:
-            render_btn_0(crupier_act=crupier_actual)
+            render_btn_0(crupier_actual, modo_filtro)
             
         with c_board:
             cols_f1 = st.columns(12)
             nums_f1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
             for i, n in enumerate(nums_f1):
                 with cols_f1[i]:
-                    render_btn_num(n, crupier_actual)
+                    render_btn_num(n, crupier_actual, modo_filtro)
 
             cols_f2 = st.columns(12)
             nums_f2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
             for i, n in enumerate(nums_f2):
                 with cols_f2[i]:
-                    render_btn_num(n, crupier_actual)
+                    render_btn_num(n, crupier_actual, modo_filtro)
 
             cols_f3 = st.columns(12)
             nums_f3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
             for i, n in enumerate(nums_f3):
                 with cols_f3[i]:
-                    render_btn_num(n, crupier_actual)
+                    render_btn_num(n, crupier_actual, modo_filtro)
         
         st.write("")
         c_bal, c_pred, c_avoid = st.columns([1.5, 2.5, 2])
@@ -535,5 +530,5 @@ with tab_stats:
         st.dataframe(df_hist, use_container_width=True)
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v4.2 — Auto-Optimizado")
-    st.write("Sistema cuántico adaptativo con aprendizaje dinámico por crupier y filtros de selección personalizados.")
+    st.markdown("### Bot Ruleta Pro v4.3 — Auto-Optimizado Definitivo")
+    st.write("Sistema adaptativo con aprendizaje dinámico por crupier y selector de estrategia de perfiles.")
