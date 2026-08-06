@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot de Ruleta Profesional v3.0", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Auto-Optimizado v4.2", layout="wide")
 
 st.markdown("""
     <style>
@@ -160,14 +160,14 @@ def borrar_ultimo_tiro_en_nube():
             pass
 
 # ==========================================
-# 3. MEMORIA DE SESIÓN (41 CRUPIERES REALES)
+# 3. MEMORIA DE SESIÓN Y AUTO-OPTIMIZACIÓN
 # ==========================================
 if 'historial_sesion' not in st.session_state:
     st.session_state.historial_sesion = []
 if 'balance' not in st.session_state:
     st.session_state.balance = 0.0
-if 'caceria_activa' not in st.session_state:
-    st.session_state.caceria_activa = None
+if 'cacerias_activas' not in st.session_state:
+    st.session_state.cacerias_activas = []
 if 'lista_crupieres' not in st.session_state:
     st.session_state.lista_crupieres = [
         'AMANDA', 'ANASTASIJA', 'ANZELIKA', 'AURORA', 'DARIA', 'DIANA', 
@@ -181,10 +181,29 @@ if 'lista_crupieres' not in st.session_state:
 if 'balance_history' not in st.session_state:
     st.session_state.balance_history = [0.0]
 
+# Listas de Perfil
+crupieres_top = {'EMMA', 'NIA', 'KEITA', 'LISA', 'LUNA', 'JEVGENIJA', 'LOLIJA', 'KATE', 'JOSSELYN', 'AMANDA', 'KARALINA', 'ANZELIKA', 'LUIZA', 'ELIYA', 'JASMINE'}
+crupieres_toxicos = {'LOLA', 'EMILY', 'VIKTORIJA', 'DARIA', 'LANA', 'INNA', 'LAURA', 'MARGARITA', 'DIANA', 'KSENIIA'}
+
+# Diccionario de Aprendizaje Dinámico por Crupier (Auto-Optimización)
+if 'crupier_aprendizaje' not in st.session_state:
+    st.session_state.crupier_aprendizaje = {} # crupier -> {'wins': 0, 'losses': 0}
+
+if 'crupier_anterior_counts' not in st.session_state:
+    st.session_state.crupier_anterior_counts = {}
+if 's1_hits_tracker' not in st.session_state:
+    st.session_state.s1_hits_tracker = {}
+if 's2_won_nums' not in st.session_state:
+    st.session_state.s2_won_nums = set()
+if 'shift_losses' not in st.session_state:
+    st.session_state.shift_losses = 0
+if 'crupier_activo' not in st.session_state:
+    st.session_state.crupier_activo = 'DARIA'
+
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. FUNCIONES DE RENDERIZADO DE BOTONES
+# 4. RENDERIZADO DE BOTONES
 # ==========================================
 def render_btn_0(crupier_act):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
@@ -203,27 +222,77 @@ def render_btn_num(n, crupier_act):
         st.rerun()
 
 # ==========================================
-# 5. ALGORITMO MATEMÁTICO OPTIMIZADO (SL=30)
+# 5. MOTOR ADAPTATIVO CON AUTO-OPTIMIZACIÓN
 # ==========================================
-def escanear_oportunidades(tiros):
-    if len(tiros) < 15:
-        return None
+def evaluar_permiso_crupier(crupier, modo_filtro):
+    # Inicializar registro de aprendizaje si no existe
+    if crupier not in st.session_state.crupier_aprendizaje:
+        st.session_state.crupier_aprendizaje[crupier] = {'wins': 0, 'losses': 0}
         
-    ventana = tiros[-100:]
-    counts = pd.Series(ventana).value_counts()
-    numeros_calientes = counts[counts >= 4].index.tolist()
+    stats = st.session_state.crupier_aprendizaje[crupier]
+    total_intentos = stats['wins'] + stats['losses']
     
-    for num in numeros_calientes:
-        try:
-            ultimo_hit_atras = list(reversed(tiros)).index(num)
-            if ultimo_hit_atras >= 15:
-                return num
-        except ValueError:
-            return num
-            
-    return None
+    # Auto-Optimización Dinámica: Si en esta sesión el crupier acumula más derrotas que victorias, se bloquea automáticamente
+    if total_intentos >= 2 and (stats['wins'] / total_intentos) < 0.35:
+        return False, "Bloqueado por Auto-Optimización (Bajo rendimiento en sesión)"
 
-def registrar_tiro(num, crupier_actual):
+    if modo_filtro == "Modo Elite (Top 15 Sniper)":
+        if crupier not in crupieres_top:
+            return False, "Filtrado (No pertenece al Top Elite)"
+    elif modo_filtro == "Filtro Anti-Tóxicos":
+        if crupier in crupieres_toxicos:
+            return False, "Filtrado (Crupier clasificado como Tóxico/Disperso)"
+            
+    return True, "Habilitado"
+
+def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
+    permitido, motivo = evaluar_permiso_crupier(crupier_actual, modo_filtro)
+    if not permitido or st.session_state.shift_losses >= 1:
+        return None, None
+        
+    num_tiros = len(tiros_shift)
+    
+    # Estrategia 1 (Tiros 1 a 20)
+    if 1 <= num_tiros <= 20:
+        num_actual = tiros_shift[-1]
+        prev_occ = [i for i, x in enumerate(tiros_shift[:-1]) if x == num_actual]
+        if prev_occ:
+            distancia = (num_tiros - 1) - prev_occ[-1]
+            if distancia <= 6:
+                if st.session_state.s1_hits_tracker.get(num_actual, 0) < 2:
+                    if not any(c['numero'] == num_actual and c['estrategia'] == 1 for c in st.session_state.cacerias_activas):
+                        return num_actual, 1
+
+    # Estrategia 2 (Tiros 1 a 35)
+    if num_tiros <= 35:
+        for num in set(tiros_shift):
+            if num in st.session_state.s2_won_nums:
+                continue
+            prev_hits = st.session_state.crupier_anterior_counts.get(num, 0)
+            if not (1 <= prev_hits <= 2):
+                continue
+            occ = [i for i, x in enumerate(tiros_shift) if x == num]
+            if len(occ) >= 3:
+                if (occ[-1] - occ[-3] + 1) <= 24:
+                    if not any(c['numero'] == num for c in st.session_state.cacerias_activas):
+                        return num, 2
+                        
+    return None, None
+
+def registrar_tiro(num, crupier_actual, modo_filtro):
+    if st.session_state.crupier_activo != crupier_actual:
+        tiros_salientes = [t['numero'] for t in st.session_state.historial_sesion if t['crupier'] == st.session_state.crupier_activo]
+        counts_salientes = {}
+        for x in tiros_salientes:
+            counts_salientes[x] = counts_salientes.get(x, 0) + 1
+        st.session_state.crupier_anterior_counts = counts_salientes
+        
+        st.session_state.crupier_activo = crupier_actual
+        st.session_state.s1_hits_tracker = {}
+        st.session_state.s2_won_nums = set()
+        st.session_state.shift_losses = 0
+        st.session_state.cacerias_activas = []
+
     st.session_state.historial_sesion.append({
         'crupier': crupier_actual,
         'numero': num,
@@ -232,36 +301,56 @@ def registrar_tiro(num, crupier_actual):
     
     guardar_tiro_en_nube(crupier_actual, num)
     
-    if st.session_state.caceria_activa:
-        st.session_state.caceria_activa['tiros_transcurridos'] += 1
+    if crupier_actual not in st.session_state.crupier_aprendizaje:
+        st.session_state.crupier_aprendizaje[crupier_actual] = {'wins': 0, 'losses': 0}
+
+    cacerias_restantes = []
+    
+    for caza in st.session_state.cacerias_activas:
+        caza['tiros_transcurridos'] += 1
         
-        if num == st.session_state.caceria_activa['numero']:
-            costo = st.session_state.caceria_activa['tiros_transcurridos']
+        if num == caza['numero']:
+            costo = caza['tiros_transcurridos']
             ganancia = 36 - costo
             st.session_state.balance += ganancia
             st.session_state.balance_history.append(st.session_state.balance)
+            st.session_state.crupier_aprendizaje[crupier_actual]['wins'] += 1 # Auto-Optimización: Registra acierto
             st.balloons()
-            st.session_state.caceria_activa = None
-        elif st.session_state.caceria_activa['tiros_transcurridos'] >= 30:  # OPTIMIZADO A 30 TIROS
-            st.session_state.balance -= 30
-            st.session_state.balance_history.append(st.session_state.balance)
-            st.session_state.caceria_activa = None
             
-    if not st.session_state.caceria_activa:
-        solo_numeros = [t['numero'] for t in st.session_state.historial_sesion]
-        num_detectado = escanear_oportunidades(solo_numeros)
-        if num_detectado is not None:
-            st.session_state.caceria_activa = {
-                'numero': num_detectado,
-                'tiros_transcurridos': 0
-            }
+            if caza['estrategia'] == 1:
+                st.session_state.s1_hits_tracker[num] = st.session_state.s1_hits_tracker.get(num, 0) + 1
+                if st.session_state.s1_hits_tracker[num] < 2:
+                    caza['tiros_transcurridos'] = 0
+                    cacerias_restantes.append(caza)
+            else:
+                st.session_state.s2_won_nums.add(num)
+        else:
+            limite = 7 if caza['estrategia'] == 1 else 11
+            if caza['tiros_transcurridos'] >= limite:
+                st.session_state.balance -= limite
+                st.session_state.balance_history.append(st.session_state.balance)
+                st.session_state.shift_losses += 1
+                st.session_state.crupier_aprendizaje[crupier_actual]['losses'] += 1 # Auto-Optimización: Registra fallo
+            else:
+                cacerias_restantes.append(caza)
+                
+    st.session_state.cacerias_activas = cacerias_restantes
+    
+    tiros_del_crupier = [t['numero'] for t in st.session_state.historial_sesion if t['crupier'] == crupier_actual]
+    num_det, strat_det = escanear_disparos(tiros_del_crupier, crupier_actual, modo_filtro)
+    if num_det is not None:
+        st.session_state.cacerias_activas.append({
+            'numero': num_det,
+            'estrategia': strat_det,
+            'tiros_transcurridos': 0
+        })
 
 # ==========================================
 # 6. INTERFAZ DE USUARIO 100% EN ESPAÑOL
 # ==========================================
 
 tab_main, tab_settings, tab_stats, tab_about = st.tabs([
-    "Panel Principal", 
+    "Panel Principal (Auto-Optimizado)", 
     "Configuración y Crupieres", 
     "Estadísticas Generales", 
     "Acerca del Sistema"
@@ -270,21 +359,37 @@ tab_main, tab_settings, tab_stats, tab_about = st.tabs([
 with tab_main:
     col_left, col_right = st.columns([1, 3])
     
-    # PANEL LATERAL IZQUIERDO (CONTROLES)
     with col_left:
         st.markdown("### ⚙️ Panel de Control")
         
-        crupier_actual = st.selectbox("— Seleccionar Crupier —", st.session_state.lista_crupieres)
-        modo_actual = st.selectbox("— Seleccionar Estrategia —", ["Modo Conservador (1 Número)", "Modo Adaptativo (En Desarrollo)"])
+        crupier_actual = st.selectbox("— Seleccionar Crupier Activo —", st.session_state.lista_crupieres)
         
+        # Selector de Filtro de Crupieres solicitado
+        modo_filtro = st.selectbox(
+            "— Estrategia de Selección —", 
+            ["🌐 Todos los Crupieres", "🛡️ Filtro Anti-Tóxicos", "🎯 Modo Elite (Top 15 Sniper)"]
+        )
+        
+        # Validación de Estado del Crupier actual según filtro y auto-optimización
+        permitido, motivo_estado = evaluar_permiso_crupier(crupier_actual, modo_filtro)
+        if permitido:
+            if crupier_actual in crupieres_top:
+                st.success("🌟 Crupier Rítmico (TOP ELITE)")
+            else:
+                st.info("ℹ️ Crupier Habilitado (Neutro/Estándar)")
+        else:
+            st.error(f"⛔ {motivo_estado}")
+            
         tiros_crupier = sum(1 for t in st.session_state.historial_sesion if t['crupier'] == crupier_actual)
         st.caption(f"Progreso del Crupier: **{tiros_crupier} / 50 tiradas**")
-        if tiros_crupier >= 40:
+        if tiros_crupier >= 35:
+            st.warning("⚠️ Límite de 35 tiros alcanzado (Nuevas entradas bloqueadas)")
+        elif tiros_crupier >= 40:
             st.error("⚠️ Alerta: Cambio de Crupier Inminente")
             
         st.divider()
         
-        st.markdown("**Rendimiento de la Sesión (Unidades)**")
+        st.markdown("**Rendimiento del Sistema Adaptativo (U)**")
         df_chart = pd.DataFrame({'Unidades': st.session_state.balance_history})
         st.line_chart(df_chart, height=120)
         
@@ -296,78 +401,87 @@ with tab_main:
                 st.session_state.historial_sesion = []
                 st.session_state.balance = 0.0
                 st.session_state.balance_history = [0.0]
-                st.session_state.caceria_activa = None
+                st.session_state.cacerias_activas = []
+                st.session_state.crupier_anterior_counts = {}
+                st.session_state.s1_hits_tracker = {}
+                st.session_state.s2_won_nums = set()
+                st.session_state.shift_losses = 0
+                st.session_state.crupier_aprendizaje = {}
                 st.rerun()
         with col_b2:
             if st.button("Deshacer ↩️", key="undo_btn"):
                 if st.session_state.historial_sesion:
                     st.session_state.historial_sesion.pop()
                     borrar_ultimo_tiro_en_nube()
-                    if st.session_state.caceria_activa:
-                        st.session_state.caceria_activa['tiros_transcurridos'] = max(0, st.session_state.caceria_activa['tiros_transcurridos'] - 1)
                     st.rerun()
 
-    # TAPETE PRINCIPAL DE LA RULETA (VERDE)
+    # TAPETE PRINCIPAL
     with col_right:
         st.markdown('<div class="green-felt-table"></div>', unsafe_allow_html=True)
         
         c_zero, c_board = st.columns([1, 12])
         
         with c_zero:
-            render_btn_0(crupier_actual)
+            render_btn_0(crupier_act=crupier_actual)
             
         with c_board:
-            # Fila 1 (3 a 36)
             cols_f1 = st.columns(12)
             nums_f1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
             for i, n in enumerate(nums_f1):
                 with cols_f1[i]:
                     render_btn_num(n, crupier_actual)
 
-            # Fila 2 (2 a 35)
             cols_f2 = st.columns(12)
             nums_f2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
             for i, n in enumerate(nums_f2):
                 with cols_f2[i]:
                     render_btn_num(n, crupier_actual)
 
-            # Fila 3 (1 a 34)
             cols_f3 = st.columns(12)
             nums_f3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
             for i, n in enumerate(nums_f3):
                 with cols_f3[i]:
                     render_btn_num(n, crupier_actual)
         
-        # PANELES INFERIORES DE ESTADO
         st.write("")
         c_bal, c_pred, c_avoid = st.columns([1.5, 2.5, 2])
         
         with c_bal:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
             st.metric("Balance Total", f"{st.session_state.balance:.2f} U")
-            st.caption(f"Tiros en esta sesión: {len(st.session_state.historial_sesion)}")
+            st.caption(f"Fallos en este turno: {st.session_state.shift_losses} / 1 máx")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_pred:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**🎯 APUESTA RECOMENDADA**")
-            if st.session_state.caceria_activa:
-                num_caza = st.session_state.caceria_activa['numero']
-                tiro_n = st.session_state.caceria_activa['tiros_transcurridos'] + 1
-                st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Tiro {tiro_n} de 30)")
+            st.markdown("**🎯 APUESTAS RECOMENDADAS (AUTO-ADAPTATIVO)**")
+            if not permitido:
+                st.warning(f"🔒 Mesa pausada por filtro: {motivo_estado}")
+            elif st.session_state.cacerias_activas:
+                for caza in st.session_state.cacerias_activas:
+                    num_caza = caza['numero']
+                    strat = caza['estrategia']
+                    tiro_n = caza['tiros_transcurridos'] + 1
+                    lim_t = 7 if strat == 1 else 11
+                    st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Estrategia {strat} - Tiro {tiro_n} de {lim_t})")
             else:
-                st.info("Escaneando patrones de mesa en tiempo real...")
+                if st.session_state.shift_losses >= 1:
+                    st.warning("🔒 Turno bloqueado por 1 fallo previo. Esperando cambio de crupier.")
+                else:
+                    st.info("Escaneando con aprendizaje dinámico activo...")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_avoid:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**❌ NÚMEROS A EVITAR (FRÍOS)**")
-            st.warning("Evitar números con ausencia sostenida sin activación de gatillo.")
+            st.markdown("**🤖 ESTADO DE APRENDIZAJE**")
+            stats_actuales = st.session_state.crupier_aprendizaje.get(crupier_actual, {'wins': 0, 'losses': 0})
+            st.write(f"• Crupier: **{crupier_actual}**")
+            st.write(f"• Aciertos Registrados: {stats_actuales['wins']}")
+            st.write(f"• Fallos Registrados: {stats_actuales['losses']}")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
 
-        # VERIFICACIÓN Y HISTORIAL EN VIVO
         st.markdown("### 📜 Verificación e Historial de Tiradas en Vivo")
         
         if st.session_state.historial_sesion:
@@ -405,32 +519,21 @@ with tab_main:
         else:
             st.info("No hay tiradas registradas. Ingresa los números directamente desde el tapete superior.")
 
-# PESTAÑA DE CONFIGURACIÓN Y CRUPIERES
 with tab_settings:
-    st.subheader("Gestión de Crupieres y Parámetros")
-    st.markdown("**Lista de Crupieres Registrados en la Base de Datos (41):**")
-    st.write(", ".join(st.session_state.lista_crupieres))
-    
-    st.divider()
-    
-    nuevo_crupier = st.text_input("Añadir Otro Crupier Nuevo")
-    if st.button("Registrar Crupier"):
-        if nuevo_crupier and nuevo_crupier.upper() not in st.session_state.lista_crupieres:
-            st.session_state.lista_crupieres.append(nuevo_crupier.upper())
-            st.session_state.lista_crupieres.sort()
-            st.success(f"Crupier {nuevo_crupier.upper()} añadido a la base de datos.")
-            st.rerun()
+    st.subheader("Gestión de Crupieres y Pesos de Aprendizaje")
+    st.markdown("**Matriz de Auto-Optimización Activa por Crupier:**")
+    if st.session_state.crupier_aprendizaje:
+        df_aprox = pd.DataFrame.from_dict(st.session_state.crupier_aprendizaje, orient='index')
+        st.dataframe(df_aprox, use_container_width=True)
+    else:
+        st.info("Aún no hay registros de aprendizaje en esta sesión. Empieza a registrar tiros.")
 
-# PESTAÑA DE ESTADÍSTICAS GENERALES
 with tab_stats:
     st.subheader("Registro Completo de la Sesión")
     if st.session_state.historial_sesion:
         df_hist = pd.DataFrame(st.session_state.historial_sesion)
         st.dataframe(df_hist, use_container_width=True)
-    else:
-        st.write("Aún no existen registros en la sesión activa.")
 
-# PESTAÑA ACERCA DEL SISTEMA
 with tab_about:
-    st.markdown("### Bot de Ruleta Profesional v3.0")
-    st.write("Motor analítico cuantitativo optimizado para la detección de anomalías estocásticas y sincronización continua en la nube.")
+    st.markdown("### Bot Ruleta Pro v4.2 — Auto-Optimizado")
+    st.write("Sistema cuántico adaptativo con aprendizaje dinámico por crupier y filtros de selección personalizados.")
