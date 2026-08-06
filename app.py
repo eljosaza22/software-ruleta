@@ -6,19 +6,17 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 # ==========================================
-# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
+# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Auto-Optimizado v4.3", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Sistema v4.4", layout="wide")
 
 st.markdown("""
     <style>
-    /* Fondo general gris estilo software Windows clásico */
     .stApp {
         background-color: #d4d0c8;
         font-family: 'Tahoma', 'Segoe UI', sans-serif;
     }
     
-    /* Ocultar espacio vertical de los marcadores HTML */
     [data-testid="stElementContainer"]:has(.marker-red),
     [data-testid="stElementContainer"]:has(.marker-black),
     [data-testid="stElementContainer"]:has(.marker-green),
@@ -29,7 +27,6 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* TAPETE VERDE DE FIELTRO COMPLETO */
     [data-testid="stElementContainer"]:has(.green-felt-table) + [data-testid="stHorizontalBlock"] {
         background: linear-gradient(135deg, #0b6623 0%, #064016 100%) !important;
         padding: 25px 20px !important;
@@ -40,7 +37,6 @@ st.markdown("""
         align-items: center !important;
     }
 
-    /* BOTÓN VERDE (0) */
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%) !important;
         border: 2px solid #ffffff !important;
@@ -56,7 +52,6 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* BOTONES ROJOS (Círculos) */
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%) !important;
         border: 2px solid #ffffff !important;
@@ -77,7 +72,6 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* BOTONES NEGROS (Círculos) */
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #424242 0%, #111111 100%) !important;
         border: 2px solid #ffffff !important;
@@ -98,7 +92,6 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* EFECTO HOVER */
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button:hover {
@@ -108,7 +101,6 @@ st.markdown("""
         transition: all 0.15s ease-in-out !important;
     }
 
-    /* Cajas de estado inferiores */
     .status-box {
         background-color: #ffffff;
         border: 2px inset #d4d0c8;
@@ -160,7 +152,7 @@ def borrar_ultimo_tiro_en_nube():
             pass
 
 # ==========================================
-# 3. MEMORIA DE SESIÓN Y AUTO-OPTIMIZACIÓN
+# 3. MEMORIA DE SESIÓN
 # ==========================================
 if 'historial_sesion' not in st.session_state:
     st.session_state.historial_sesion = []
@@ -181,7 +173,6 @@ if 'lista_crupieres' not in st.session_state:
 if 'balance_history' not in st.session_state:
     st.session_state.balance_history = [0.0]
 
-# Listas de Perfil
 crupieres_top = {'EMMA', 'NIA', 'KEITA', 'LISA', 'LUNA', 'JEVGENIJA', 'LOLIJA', 'KATE', 'JOSSELYN', 'AMANDA', 'KARALINA', 'ANZELIKA', 'LUIZA', 'ELIYA', 'JASMINE'}
 crupieres_toxicos = {'LOLA', 'EMILY', 'VIKTORIJA', 'DARIA', 'LANA', 'INNA', 'LAURA', 'MARGARITA', 'DIANA', 'KSENIIA'}
 
@@ -202,7 +193,7 @@ if 'crupier_activo' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO CON AUTO-OPTIMIZACIÓN
+# 4. MOTOR ADAPTATIVO
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
     if crupier not in st.session_state.crupier_aprendizaje:
@@ -230,20 +221,25 @@ def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
         
     num_tiros = len(tiros_shift)
     
-    # Estrategia 1 (Tiros 1 a 20)
+    # 1. Estrategia 1 (Tiros 1 a 20)
     if 1 <= num_tiros <= 20:
         num_actual = tiros_shift[-1]
-        prev_occ = [i for i, x in enumerate(tiros_shift[:-1]) if x == num_actual]
-        if prev_occ:
-            distancia = (num_tiros - 1) - prev_occ[-1]
-            if distancia <= 6:
-                if st.session_state.s1_hits_tracker.get(num_actual, 0) < 2:
-                    if not any(c['numero'] == num_actual and c['estrategia'] == 1 for c in st.session_state.cacerias_activas):
-                        return num_actual, 1
+        # Control de Saturación: Máximo 3 salidas en el turno
+        if tiros_shift.count(num_actual) < 4:
+            prev_occ = [i for i, x in enumerate(tiros_shift[:-1]) if x == num_actual]
+            if prev_occ:
+                distancia = (num_tiros - 1) - prev_occ[-1]
+                if distancia <= 6:
+                    if st.session_state.s1_hits_tracker.get(num_actual, 0) < 2:
+                        if not any(c['numero'] == num_actual and c['estrategia'] == 1 for c in st.session_state.cacerias_activas):
+                            return num_actual, 1
 
-    # Estrategia 2 (Tiros 1 a 35)
+    # 2. Estrategia 2 (Tiros 1 a 35)
     if num_tiros <= 35:
         for num in set(tiros_shift):
+            # Control de Saturación: Si ya salió 4 o más veces, BLOQUEAR
+            if tiros_shift.count(num) >= 4:
+                continue
             if num in st.session_state.s2_won_nums:
                 continue
             prev_hits = st.session_state.crupier_anterior_counts.get(num, 0)
@@ -324,7 +320,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         })
 
 # ==========================================
-# 5. RENDERIZADO DE BOTONES CON MODO_FILTRO
+# 5. RENDERIZADO DE BOTONES
 # ==========================================
 def render_btn_0(crupier_act, modo_f):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
@@ -382,6 +378,20 @@ with tab_main:
         elif tiros_crupier >= 40:
             st.error("⚠️ Alerta: Cambio de Crupier Inminente")
             
+        st.divider()
+
+        # BOTÓN RÁPIDO PARA AÑADIR NUEVO CRUPIER EN EL PANEL LATERAL
+        with st.expander("➕ Añadir Nuevo Crupier"):
+            nuevo_nombre = st.text_input("Nombre del Crupier:", key="sidebar_new_dealer")
+            if st.button("Guardar en Lista", key="btn_save_dealer"):
+                if nuevo_nombre:
+                    nombre_clean = nuevo_nombre.strip().upper()
+                    if nombre_clean not in st.session_state.lista_crupieres:
+                        st.session_state.lista_crupieres.append(nombre_clean)
+                        st.session_state.lista_crupieres.sort()
+                        st.success(f"¡Crupier {nombre_clean} añadido!")
+                        st.rerun()
+
         st.divider()
         
         st.markdown("**Rendimiento del Sistema Adaptativo (U)**")
@@ -515,13 +525,22 @@ with tab_main:
             st.info("No hay tiradas registradas. Ingresa los números directamente desde el tapete superior.")
 
 with tab_settings:
-    st.subheader("Gestión de Crupieres y Pesos de Aprendizaje")
+    st.subheader("Gestión de Crupieres")
+    nuevo_crupier_settings = st.text_input("Añadir Crupier desde Configuración:")
+    if st.button("Guardar Crupier (Ajustes)"):
+        if nuevo_crupier_settings:
+            nombre_clean2 = nuevo_crupier_settings.strip().upper()
+            if nombre_clean2 not in st.session_state.lista_crupieres:
+                st.session_state.lista_crupieres.append(nombre_clean2)
+                st.session_state.lista_crupieres.sort()
+                st.success(f"¡Crupier {nombre_clean2} añadido!")
+                st.rerun()
+
+    st.divider()
     st.markdown("**Matriz de Auto-Optimización Activa por Crupier:**")
     if st.session_state.crupier_aprendizaje:
         df_aprox = pd.DataFrame.from_dict(st.session_state.crupier_aprendizaje, orient='index')
         st.dataframe(df_aprox, use_container_width=True)
-    else:
-        st.info("Aún no hay registros de aprendizaje en esta sesión. Empieza a registrar tiros.")
 
 with tab_stats:
     st.subheader("Registro Completo de la Sesión")
@@ -530,5 +549,5 @@ with tab_stats:
         st.dataframe(df_hist, use_container_width=True)
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v4.3 — Auto-Optimizado Definitivo")
-    st.write("Sistema adaptativo con aprendizaje dinámico por crupier y selector de estrategia de perfiles.")
+    st.markdown("### Bot Ruleta Pro v4.4 — Auto-Optimizado")
+    st.write("Sistema adaptativo con control de saturación de tiradas y botón de gestión de crupieres.")
