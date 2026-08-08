@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Ruleta_Data base v4.7", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Ruleta_Data base v4.8", layout="wide")
 
 st.markdown("""
     <style>
@@ -137,7 +137,6 @@ def conectar_google_sheets():
         )
         client = gspread.authorize(creds)
         
-        # Apertura directa de la hoja "Ruleta_Data base"
         try:
             spreadsheet = client.open(NOMBRE_GOOGLE_SHEET)
         except Exception:
@@ -175,6 +174,19 @@ def obtener_hoja_crupieres():
                 return None
     return None
 
+def obtener_hoja_balance():
+    if spreadsheet:
+        try:
+            return spreadsheet.worksheet("Registro_Ganancias")
+        except Exception:
+            try:
+                ws = spreadsheet.add_worksheet(title="Registro_Ganancias", rows="1000", cols="5")
+                ws.append_row(["Fecha", "Hora", "Crupier", "Cambio_U", "Balance_Acumulado"])
+                return ws
+            except Exception:
+                return None
+    return None
+
 def guardar_tiro_en_nube(crupier, numero):
     sheet_tiros = obtener_hoja_tiros()
     if sheet_tiros:
@@ -204,8 +216,36 @@ def guardar_crupier_en_nube(nombre_crupier):
         except Exception:
             pass
 
+def registrar_movimiento_balance_nube(crupier, cambio_u, nuevo_balance):
+    sheet_bal = obtener_hoja_balance()
+    if sheet_bal:
+        try:
+            fecha_actual = datetime.now().strftime("%Y-%m-%d")
+            hora_actual = datetime.now().strftime("%H:%M:%S")
+            sheet_bal.append_row([fecha_actual, hora_actual, str(crupier).strip().upper(), float(cambio_u), float(nuevo_balance)])
+        except Exception:
+            pass
+
+def borrar_ultimo_movimiento_balance_nube():
+    sheet_bal = obtener_hoja_balance()
+    if sheet_bal:
+        try:
+            filas = sheet_bal.get_all_values()
+            if len(filas) > 1:
+                sheet_bal.delete_rows(len(filas))
+        except Exception:
+            pass
+
+def reiniciar_balance_historico_nube():
+    sheet_bal = obtener_hoja_balance()
+    if sheet_bal:
+        try:
+            sheet_bal.clear()
+            sheet_bal.append_row(["Fecha", "Hora", "Crupier", "Cambio_U", "Balance_Acumulado"])
+        except Exception:
+            pass
+
 def cargar_datos_historicos_nube():
-    """Carga la lista completa de crupieres y retroalimenta el modelo adaptativo con tiradas pasadas."""
     crupieres_base = [
         'AMANDA', 'ANASTASIJA', 'ANZELIKA', 'AURORA', 'DARIA', 'DIANA', 
         'ELIYA', 'ELIZABETH', 'EMILY', 'EMMA', 'EVELINA', 'GINTA', 
@@ -216,8 +256,10 @@ def cargar_datos_historicos_nube():
         'XENIA', 'ZOJA'
     ]
     aprendizaje_historico = {}
+    balance_historico_ultimo = 0.0
+    historial_balance_lista = [0.0]
     
-    # 1. Cargar crupieres guardados en la pestaña Lista_Crupieres
+    # 1. Cargar crupieres desde la nube
     sheet_crup = obtener_hoja_crupieres()
     if sheet_crup:
         try:
@@ -231,7 +273,7 @@ def cargar_datos_historicos_nube():
         except Exception:
             pass
 
-    # 2. Cargar tiradas históricas para retroalimentar el aprendizaje
+    # 2. Cargar tiradas históricas
     sheet_tiros = obtener_hoja_tiros()
     if sheet_tiros:
         try:
@@ -259,26 +301,48 @@ def cargar_datos_historicos_nube():
         except Exception:
             pass
 
+    # 3. Cargar historial de Ganancias/Pérdidas desde Google Sheets
+    sheet_bal = obtener_hoja_balance()
+    if sheet_bal:
+        try:
+            b_rows = sheet_bal.get_all_values()
+            if len(b_rows) > 1:
+                b_list = []
+                for br in b_rows[1:]:
+                    if len(br) >= 5:
+                        try:
+                            val = float(br[4])
+                            b_list.append(val)
+                        except Exception:
+                            pass
+                if b_list:
+                    balance_historico_ultimo = b_list[-1]
+                    historial_balance_lista = [0.0] + b_list
+        except Exception:
+            pass
+
     crupieres_base = sorted(list(set(crupieres_base)))
-    return crupieres_base, aprendizaje_historico
+    return crupieres_base, aprendizaje_historico, balance_historico_ultimo, historial_balance_lista
 
 # ==========================================
 # 3. MEMORIA Y AUTO-CARGA DESDE LA NUBE
 # ==========================================
 if 'datos_cargados' not in st.session_state:
-    lista_crup_nube, apren_nube = cargar_datos_historicos_nube()
+    lista_crup_nube, apren_nube, bal_hist_nube, bh_lista_nube = cargar_datos_historicos_nube()
     st.session_state.lista_crupieres = lista_crup_nube
     st.session_state.crupier_aprendizaje = apren_nube
+    st.session_state.balance_acumulado_historico = bal_hist_nube
+    st.session_state.balance_history_acumulado = bh_lista_nube
     st.session_state.datos_cargados = True
 
 if 'historial_sesion' not in st.session_state:
     st.session_state.historial_sesion = []
-if 'balance' not in st.session_state:
-    st.session_state.balance = 0.0
+if 'balance_dia' not in st.session_state:
+    st.session_state.balance_dia = 0.0
 if 'cacerias_activas' not in st.session_state:
     st.session_state.cacerias_activas = []
-if 'balance_history' not in st.session_state:
-    st.session_state.balance_history = [0.0]
+if 'balance_history_dia' not in st.session_state:
+    st.session_state.balance_history_dia = [0.0]
 
 crupieres_top = {'EMMA', 'NIA', 'KEITA', 'LISA', 'LUNA', 'JEVGENIJA', 'LOLIJA', 'KATE', 'JOSSELYN', 'AMANDA', 'KARALINA', 'ANZELIKA', 'LUIZA', 'ELIYA', 'JASMINE'}
 crupieres_toxicos = {'LOLA', 'EMILY', 'VIKTORIJA', 'DARIA', 'LANA', 'INNA', 'LAURA', 'MARGARITA', 'DIANA', 'KSENIIA'}
@@ -301,18 +365,10 @@ if 'crupier_activo' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO CON REGLA DE FALLO FINANCIADO
+# 4. MOTOR ADAPTATIVO (SIN BLOQUEO AUTOMÁTICO DE CRUPIER)
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
-    if crupier not in st.session_state.crupier_aprendizaje:
-        st.session_state.crupier_aprendizaje[crupier] = {'wins': 0, 'losses': 0}
-        
-    stats = st.session_state.crupier_aprendizaje[crupier]
-    total_intentos = stats['wins'] + stats['losses']
-    
-    if total_intentos >= 2 and (stats['wins'] / total_intentos) < 0.35:
-        return False, "Bloqueado por Auto-Optimización (Bajo rendimiento en base histórica)"
-
+    # La decisión de bloqueo depende EXCLUSIVAMENTE de la opción elegida por el usuario
     if modo_filtro == "Modo Elite (Top 15 Sniper)":
         if crupier not in crupieres_top:
             return False, "Filtrado (No pertenece al Top Elite)"
@@ -320,23 +376,20 @@ def evaluar_permiso_crupier(crupier, modo_filtro):
         if crupier in crupieres_toxicos:
             return False, "Filtrado (Crupier clasificado como Tóxico)"
             
+    # Si elige "Todos los Crupieres" no hay ningún bloqueo automático por historial
     return True, "Habilitado"
 
 def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
     permitido, motivo = evaluar_permiso_crupier(crupier_actual, modo_filtro)
     
-    # REGLA DE BLOQUEO ADAPTATIVA:
-    # 1. Si ocurrió 1 fallo seco (sin victorias previas en el 1er acierto) -> BLOQUEAR
-    # 2. Si ocurrieron 2 fallos totales en el turno -> BLOQUEAR DEFINITIVO
     if not permitido or st.session_state.fallos_secos >= 1 or st.session_state.fallos_totales >= 2:
         return None, None
         
     num_tiros = len(tiros_shift)
     
-    # 1. Estrategia 1 (Repetición <= 6 tiros; Ventana 1 a 20 del crupier)
+    # 1. Estrategia 1 (Repetición <= 6 tiros; Ventana 1 a 20)
     if 1 <= num_tiros <= 20:
         num_actual = tiros_shift[-1]
-        # Regla de Control de Saturación: Máximo 3 salidas en el turno
         if tiros_shift.count(num_actual) < 4:
             prev_occ = [i for i, x in enumerate(tiros_shift[:-1]) if x == num_actual]
             if prev_occ:
@@ -346,7 +399,7 @@ def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
                         if not any(c['numero'] == num_actual and c['estrategia'] == 1 for c in st.session_state.cacerias_activas):
                             return num_actual, 1
 
-    # 2. Estrategia 2 (3 hits en <= 24 tiros; Ventana 1 a 35; Regla 12 crupier anterior)
+    # 2. Estrategia 2 (3 hits en <= 24 tiros; Ventana 1 a 35)
     if num_tiros <= 35:
         for num in set(tiros_shift):
             if tiros_shift.count(num) >= 4:
@@ -398,9 +451,16 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         if num == caza['numero']:
             costo = caza['tiros_transcurridos']
             ganancia = 36 - costo
-            st.session_state.balance += ganancia
-            st.session_state.balance_history.append(st.session_state.balance)
+            
+            # Actualizar balances
+            st.session_state.balance_dia += ganancia
+            st.session_state.balance_acumulado_historico += ganancia
+            
+            st.session_state.balance_history_dia.append(st.session_state.balance_dia)
+            st.session_state.balance_history_acumulado.append(st.session_state.balance_acumulado_historico)
+            
             st.session_state.crupier_aprendizaje[crupier_actual]['wins'] += 1
+            registrar_movimiento_balance_nube(crupier_actual, ganancia, st.session_state.balance_acumulado_historico)
             st.balloons()
             
             if caza['estrategia'] == 1:
@@ -415,9 +475,15 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         else:
             limite = 7 if caza['estrategia'] == 1 else 11
             if caza['tiros_transcurridos'] >= limite:
-                st.session_state.balance -= limite
-                st.session_state.balance_history.append(st.session_state.balance)
+                pérdida = -limite
+                st.session_state.balance_dia += pérdida
+                st.session_state.balance_acumulado_historico += pérdida
+                
+                st.session_state.balance_history_dia.append(st.session_state.balance_dia)
+                st.session_state.balance_history_acumulado.append(st.session_state.balance_acumulado_historico)
+                
                 st.session_state.crupier_aprendizaje[crupier_actual]['losses'] += 1
+                registrar_movimiento_balance_nube(crupier_actual, pérdida, st.session_state.balance_acumulado_historico)
                 
                 st.session_state.fallos_totales += 1
                 if not caza.get('es_renovacion_2nd_hit', False):
@@ -463,7 +529,7 @@ def render_btn_num(n, crupier_act, modo_f):
 tab_main, tab_settings, tab_stats, tab_about = st.tabs([
     "Panel Principal (Ruleta_Data base)", 
     "Configuración y Crupieres", 
-    "Estadísticas Generales", 
+    "Histórico de Ganancias/Pérdidas", 
     "Acerca del Sistema"
 ])
 
@@ -498,7 +564,7 @@ with tab_main:
             
         st.divider()
 
-        # FORMULARIO DE NUEVO CRUPIER CON GUARDADO EN GOOGLE SHEETS
+        # FORMULARIO DE NUEVO CRUPIER EN GOOGLE SHEETS
         with st.expander("➕ Añadir Nuevo Crupier (Guardado en Nube)"):
             nuevo_nombre = st.text_input("Nombre del Crupier:", key="sidebar_new_dealer")
             if st.button("Guardar en Nube", key="btn_save_dealer"):
@@ -513,9 +579,9 @@ with tab_main:
 
         st.divider()
         
-        st.markdown("**Rendimiento del Día Activo (U)**")
-        df_chart = pd.DataFrame({'Unidades': st.session_state.balance_history})
-        st.line_chart(df_chart, height=120)
+        st.markdown("**Gráfico de Balance (Día Activo)**")
+        df_chart_dia = pd.DataFrame({'Unidades Día': st.session_state.balance_history_dia})
+        st.line_chart(df_chart_dia, height=110)
         
         st.divider()
         
@@ -524,20 +590,21 @@ with tab_main:
         with col_b1:
             if st.button("☀️ Reiniciar Día", key="reset_day_btn"):
                 st.session_state.historial_sesion = []
-                st.session_state.balance = 0.0
-                st.session_state.balance_history = [0.0]
+                st.session_state.balance_dia = 0.0
+                st.session_state.balance_history_dia = [0.0]
                 st.session_state.cacerias_activas = []
                 st.session_state.s1_hits_tracker = {}
                 st.session_state.s2_won_nums = set()
                 st.session_state.fallos_secos = 0
                 st.session_state.fallos_totales = 0
-                st.success("¡Nuevo día iniciado! Memoria y crupieres conservados.")
+                st.success("¡Nuevo día iniciado!")
                 st.rerun()
         with col_b2:
             if st.button("Deshacer ↩️", key="undo_btn"):
                 if st.session_state.historial_sesion:
                     st.session_state.historial_sesion.pop()
                     borrar_ultimo_tiro_en_nube()
+                    borrar_ultimo_movimiento_balance_nube()
                     st.rerun()
 
     # TAPETE PRINCIPAL
@@ -569,19 +636,25 @@ with tab_main:
                     render_btn_num(n, crupier_actual, modo_filtro)
         
         st.write("")
-        c_bal, c_pred, c_avoid = st.columns([1.5, 2.5, 2])
+        c_bal1, c_bal2, c_pred = st.columns([1.5, 1.5, 3])
         
-        with c_bal:
+        with c_bal1:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.metric("Balance Día Actual", f"{st.session_state.balance:.2f} U")
-            st.caption(f"Fallos totales turno: {st.session_state.fallos_totales} / 2 máx")
+            st.metric("Balance del Día", f"{st.session_state.balance_dia:.2f} U")
+            st.caption(f"Fallos turno: {st.session_state.fallos_totales} / 2 máx")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with c_bal2:
+            st.markdown('<div class="status-box">', unsafe_allow_html=True)
+            st.metric("Balance Histórico Total", f"{st.session_state.balance_acumulado_historico:.2f} U")
+            st.caption("Guardado en Google Sheets")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_pred:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**🎯 APUESTAS RECOMENDADAS (Ruleta_Data base)**")
+            st.markdown("**🎯 APUESTAS RECOMENDADAS**")
             if not permitido:
-                st.warning(f"🔒 Mesa pausada por filtro: {motivo_estado}")
+                st.warning(f"🔒 Mesa pausada por filtro de usuario: {motivo_estado}")
             elif st.session_state.cacerias_activas:
                 for caza in st.session_state.cacerias_activas:
                     num_caza = caza['numero']
@@ -595,14 +668,7 @@ with tab_main:
                 elif st.session_state.fallos_totales >= 2:
                     st.warning("🔒 Turno bloqueado por acumulación de 2 fallos totales.")
                 else:
-                    st.info("Escaneando con aprendizaje retroalimentado desde Ruleta_Data base...")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-        with c_avoid:
-            st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**🤖 PROTECCIÓN DE BALANCE**")
-            st.write(f"• Fallos Secos (1er hit): {st.session_state.fallos_secos} / 1 máx")
-            st.write(f"• Fallos Totales (Turno): {st.session_state.fallos_totales} / 2 máx")
+                    st.info("Escaneando patrones en vivo...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
@@ -645,7 +711,7 @@ with tab_main:
             st.info("No hay tiradas en el día activo. Ingresa los números directamente desde el tapete superior.")
 
 with tab_settings:
-    st.subheader("Gestión de Crupieres y Aprendizaje Retroalimentado")
+    st.subheader("Gestión de Crupieres")
     
     col_set1, col_set2 = st.columns(2)
     with col_set1:
@@ -661,25 +727,38 @@ with tab_settings:
                     st.rerun()
 
     with col_set2:
-        if st.button("🔄 Sincronizar / Volver a Cargar Datos desde Nube"):
-            lista_crup_nube, apren_nube = cargar_datos_historicos_nube()
+        if st.button("🔄 Sincronizar desde Nube"):
+            lista_crup_nube, apren_nube, bal_hist_nube, bh_lista_nube = cargar_datos_historicos_nube()
             st.session_state.lista_crupieres = lista_crup_nube
             st.session_state.crupier_aprendizaje = apren_nube
-            st.success("¡Base de datos retroalimentada desde Ruleta_Data base!")
+            st.session_state.balance_acumulado_historico = bal_hist_nube
+            st.session_state.balance_history_acumulado = bh_lista_nube
+            st.success("¡Base de datos sincronizada!")
             st.rerun()
 
     st.divider()
-    st.markdown("**Matriz de Aprendizaje Histórico Acumulado por Crupier:**")
-    if st.session_state.crupier_aprendizaje:
-        df_aprox = pd.DataFrame.from_dict(st.session_state.crupier_aprendizaje, orient='index')
-        st.dataframe(df_aprox, use_container_width=True)
+    st.markdown("**Lista de Crupieres Registrados:**")
+    st.write(", ".join(st.session_state.lista_crupieres))
 
 with tab_stats:
-    st.subheader("Registro Completo de la Sesión Activa")
-    if st.session_state.historial_sesion:
-        df_hist = pd.DataFrame(st.session_state.historial_sesion)
-        st.dataframe(df_hist, use_container_width=True)
+    st.subheader("Registro Histórico de Ganancias y Pérdidas Acumuladas")
+    
+    st.markdown(f"**Balance Acumulado Total Actual:** `{st.session_state.balance_acumulado_historico:.2f} U`")
+    
+    if st.session_state.balance_history_acumulado:
+        df_hist_bal = pd.DataFrame({'Balance Acumulado (U)': st.session_state.balance_history_acumulado})
+        st.line_chart(df_hist_bal, height=220)
+        
+    st.divider()
+    
+    st.warning("⚠️ Zona de Reinicio del Registro Financiero")
+    if st.button("🗑️ Reiniciar Registro Histórico de Ganancias/Pérdidas (A Cero)", key="reset_hist_financial_btn"):
+        reiniciar_balance_historico_nube()
+        st.session_state.balance_acumulado_historico = 0.0
+        st.session_state.balance_history_acumulado = [0.0]
+        st.success("¡Registro histórico de ganancias y pérdidas reiniciado a 0.00 U en Google Sheets!")
+        st.rerun()
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v4.7 — Conexión Definitiva con Ruleta_Data base")
-    st.write("Sistema adaptativo con almacenamiento persistente en 'Ruleta_Data base', aprendizaje histórico y botón de reinicio diario.")
+    st.markdown("### Bot Ruleta Pro v4.8 — Control Total del Usuario")
+    st.write("Filtro de crupieres sujeto 100% a la elección del usuario y registro persistente de P&L en 'Ruleta_Data base'.")
