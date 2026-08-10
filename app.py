@@ -8,17 +8,15 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Ruleta_Data base v4.9", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Zonas v5.1", layout="wide")
 
 st.markdown("""
     <style>
-    /* Fondo general gris estilo software Windows clásico */
     .stApp {
         background-color: #d4d0c8;
         font-family: 'Tahoma', 'Segoe UI', sans-serif;
     }
     
-    /* Ocultar espacio vertical de los marcadores HTML */
     [data-testid="stElementContainer"]:has(.marker-red),
     [data-testid="stElementContainer"]:has(.marker-black),
     [data-testid="stElementContainer"]:has(.marker-green),
@@ -29,7 +27,6 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* TAPETE VERDE DE FIELTRO COMPLETO */
     [data-testid="stElementContainer"]:has(.green-felt-table) + [data-testid="stHorizontalBlock"] {
         background: linear-gradient(135deg, #0b6623 0%, #064016 100%) !important;
         padding: 25px 20px !important;
@@ -40,7 +37,6 @@ st.markdown("""
         align-items: center !important;
     }
 
-    /* BOTÓN VERDE (0) */
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%) !important;
         border: 2px solid #ffffff !important;
@@ -56,7 +52,6 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* BOTONES ROJOS (Círculos) */
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%) !important;
         border: 2px solid #ffffff !important;
@@ -77,7 +72,6 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* BOTONES NEGROS (Círculos) */
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #424242 0%, #111111 100%) !important;
         border: 2px solid #ffffff !important;
@@ -98,7 +92,6 @@ st.markdown("""
         font-weight: 900 !important;
     }
 
-    /* EFECTO HOVER */
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button:hover {
@@ -108,7 +101,6 @@ st.markdown("""
         transition: all 0.15s ease-in-out !important;
     }
 
-    /* Cajas de estado inferiores */
     .status-box {
         background-color: #ffffff;
         border: 2px inset #d4d0c8;
@@ -259,7 +251,6 @@ def cargar_datos_historicos_nube():
     balance_historico_ultimo = 0.0
     historial_balance_lista = [0.0]
     
-    # 1. Cargar crupieres
     sheet_crup = obtener_hoja_crupieres()
     if sheet_crup:
         try:
@@ -273,7 +264,6 @@ def cargar_datos_historicos_nube():
         except Exception:
             pass
 
-    # 2. Cargar tiradas históricas
     sheet_tiros = obtener_hoja_tiros()
     if sheet_tiros:
         try:
@@ -301,7 +291,6 @@ def cargar_datos_historicos_nube():
         except Exception:
             pass
 
-    # 3. Cargar P&L acumulado
     sheet_bal = obtener_hoja_balance()
     if sheet_bal:
         try:
@@ -363,12 +352,12 @@ if 'crupier_activo' not in st.session_state:
     st.session_state.crupier_activo = 'DARIA'
 
 if 'tiros_turno_actual' not in st.session_state:
-    st.session_state.tiros_turno_actual = [] # Aísla las tiradas del turno en curso
+    st.session_state.tiros_turno_actual = []
 
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO
+# 4. MOTOR ADAPTATIVO CON REGLA DE FALLO FINANCIADO Y RENOVACIÓN
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
     if modo_filtro == "Modo Elite (Top 15 Sniper)":
@@ -388,7 +377,11 @@ def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
         
     num_tiros = len(tiros_shift)
     
-    # 1. Estrategia 1 (Repetición <= 6 tiros; Ventana 1 a 20 del TURNO ACTUAL)
+    # SILENCIADOR TOTAL EN ZONA DE FATIGA (> 35 TIROS)
+    if num_tiros > 35:
+        return None, None
+    
+    # 1. Estrategia 1 (Repetición <= 6 tiros; Ventana Tiros 1 a 20)
     if 1 <= num_tiros <= 20:
         num_actual = tiros_shift[-1]
         if tiros_shift.count(num_actual) < 4:
@@ -400,7 +393,7 @@ def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
                         if not any(c['numero'] == num_actual and c['estrategia'] == 1 for c in st.session_state.cacerias_activas):
                             return num_actual, 1
 
-    # 2. Estrategia 2 (3 hits en <= 24 tiros; Ventana 1 a 35)
+    # 2. Estrategia 2 (3 hits en <= 24 tiros; Ventana Tiros 1 a 35)
     if num_tiros <= 35:
         for num in set(tiros_shift):
             if tiros_shift.count(num) >= 4:
@@ -419,7 +412,6 @@ def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
     return None, None
 
 def registrar_tiro(num, crupier_actual, modo_filtro):
-    # Detección de cambio de crupier -> Reiniciar variables del turno
     if st.session_state.crupier_activo != crupier_actual:
         tiros_salientes = list(st.session_state.tiros_turno_actual)
         counts_salientes = {}
@@ -433,7 +425,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         st.session_state.fallos_secos = 0
         st.session_state.fallos_totales = 0
         st.session_state.cacerias_activas = []
-        st.session_state.tiros_turno_actual = [] # Aislado para el nuevo turno
+        st.session_state.tiros_turno_actual = []
 
     st.session_state.tiros_turno_actual.append(num)
 
@@ -469,6 +461,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
             
             if caza['estrategia'] == 1:
                 st.session_state.s1_hits_tracker[num] = st.session_state.s1_hits_tracker.get(num, 0) + 1
+                # Si es el 1er acierto -> Renovar para el 2º acierto (0 de 7 tiros)
                 if st.session_state.s1_hits_tracker[num] < 2:
                     caza_renovada = dict(caza)
                     caza_renovada['tiros_transcurridos'] = 0
@@ -490,6 +483,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
                 registrar_movimiento_balance_nube(crupier_actual, pérdida, st.session_state.balance_acumulado_historico)
                 
                 st.session_state.fallos_totales += 1
+                # Solo suma como fallo seco si NUNCA pagó un 1er acierto
                 if not caza.get('es_renovacion_2nd_hit', False):
                     st.session_state.fallos_secos += 1
             else:
@@ -497,7 +491,6 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
                 
     st.session_state.cacerias_activas = cacerias_restantes
     
-    # Escanear sobre las tiradas del TURNO ACTUAL en curso
     num_det, strat_det = escanear_disparos(st.session_state.tiros_turno_actual, crupier_actual, modo_filtro)
     if num_det is not None:
         st.session_state.cacerias_activas.append({
@@ -561,10 +554,15 @@ with tab_main:
             
         tiros_crupier = len(st.session_state.tiros_turno_actual)
         st.caption(f"Progreso en este Turno: **{tiros_crupier} / 50 tiradas**")
-        if tiros_crupier >= 35:
-            st.warning("⚠️ Límite de 35 tiros alcanzado (Nuevas entradas bloqueadas)")
-        elif tiros_crupier >= 40:
-            st.error("⚠️ Alerta: Cambio de Crupier Inminente")
+        
+        if tiros_crupier <= 10:
+            st.success("🌟 FASE INICIAL (ZONA DE ORO E1): Alta efectividad")
+        elif tiros_crupier <= 20:
+            st.info("🟢 FASE ALTA (TRANSICIÓN E1/E2): Cierre de Estrategia 1")
+        elif tiros_crupier <= 35:
+            st.warning("🟡 FASE MEDIA (ZONA EXCLUSIVA E2): Estrategia 1 pausada")
+        else:
+            st.error("🔴 FASE DE FATIGA (>35 Tiros): Silenciador de seguridad activo")
             
         st.divider()
 
@@ -666,14 +664,21 @@ with tab_main:
                     strat = caza['estrategia']
                     tiro_n = caza['tiros_transcurridos'] + 1
                     lim_t = 7 if strat == 1 else 11
-                    st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Estrategia {strat} - Tiro {tiro_n} de {lim_t})")
+                    
+                    # ETIQUETA VISUAL CLARA PARA 2º ACIERTO
+                    if caza.get('es_renovacion_2nd_hit', False):
+                        st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Estrategia {strat} - BUSCANDO 2º ACIERTO - Tiro {tiro_n} de {lim_t})")
+                    else:
+                        st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Estrategia {strat} - Tiro {tiro_n} de {lim_t})")
             else:
-                if st.session_state.fallos_secos >= 1:
+                if tiros_crupier > 35:
+                    st.error("🔒 Silenciador de Seguridad Activo (>35 tiros). Esperando cambio de crupier.")
+                elif st.session_state.fallos_secos >= 1:
                     st.warning("🔒 Turno bloqueado por 1 fallo seco en 1er intento.")
                 elif st.session_state.fallos_totales >= 2:
                     st.warning("🔒 Turno bloqueado por acumulación de 2 fallos totales.")
                 else:
-                    st.info("Escaneando patrones en vivo...")
+                    st.info("Escaneando patrones por zonas de avance...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
@@ -765,5 +770,5 @@ with tab_stats:
         st.rerun()
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v4.9 — Aislamiento de Turnos Aumentado")
-    st.write("Aislamiento estricto del contador de tiradas por turno en curso y sincronización completa con 'Ruleta_Data base'.")
+    st.markdown("### Bot Ruleta Pro v5.1 — Visualización de Renovaciones")
+    st.write("Identificación visual explícita de renovaciones para 2º acierto y sincronización con 'Ruleta_Data base'.")
