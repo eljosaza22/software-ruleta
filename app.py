@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Zonas v5.1", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Optimizado v5.4", layout="wide")
 
 st.markdown("""
     <style>
@@ -343,11 +343,6 @@ if 's1_hits_tracker' not in st.session_state:
 if 's2_won_nums' not in st.session_state:
     st.session_state.s2_won_nums = set()
 
-if 'fallos_secos' not in st.session_state:
-    st.session_state.fallos_secos = 0
-if 'fallos_totales' not in st.session_state:
-    st.session_state.fallos_totales = 0
-
 if 'crupier_activo' not in st.session_state:
     st.session_state.crupier_activo = 'DARIA'
 
@@ -357,7 +352,7 @@ if 'tiros_turno_actual' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO CON REGLA DE FALLO FINANCIADO Y RENOVACIÓN
+# 4. MOTOR ADAPTATIVO OPTIMIZADO (v5.4 - PICO +1,112 U)
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
     if modo_filtro == "Modo Elite (Top 15 Sniper)":
@@ -372,17 +367,30 @@ def evaluar_permiso_crupier(crupier, modo_filtro):
 def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
     permitido, motivo = evaluar_permiso_crupier(crupier_actual, modo_filtro)
     
-    if not permitido or st.session_state.fallos_secos >= 1 or st.session_state.fallos_totales >= 2:
+    if not permitido:
         return None, None
         
     num_tiros = len(tiros_shift)
     
-    # SILENCIADOR TOTAL EN ZONA DE FATIGA (> 35 TIROS)
+    # SILENCIADOR TOTAL DE SEGURIDAD EN ZONA DE FATIGA (> 35 TIROS)
     if num_tiros > 35:
         return None, None
     
-    # 1. Estrategia 1 (Repetición <= 6 tiros; Ventana Tiros 1 a 20)
-    if 1 <= num_tiros <= 20:
+    # 1. EVALUAR PRIMERO ESTRATEGIA 2 (3 hits en <= 24 tiros; Ventana Tiros 1 a 35)
+    if num_tiros <= 35:
+        for num in set(tiros_shift):
+            if tiros_shift.count(num) >= 4 or num in st.session_state.s2_won_nums:
+                continue
+            prev_hits = st.session_state.crupier_anterior_counts.get(num, 0)
+            if not (1 <= prev_hits <= 2):
+                continue
+            occ = [i for i, x in enumerate(tiros_shift) if x == num]
+            if len(occ) >= 3 and (occ[-1] - occ[-3] + 1) <= 24:
+                if not any(c['numero'] == num for c in st.session_state.cacerias_activas):
+                    return num, 2
+
+    # 2. EVALUAR ESTRATEGIA 1 (Repetición <= 6 tiros; Ventana Tiros 1 a 25)
+    if 1 <= num_tiros <= 25:
         num_actual = tiros_shift[-1]
         if tiros_shift.count(num_actual) < 4:
             prev_occ = [i for i, x in enumerate(tiros_shift[:-1]) if x == num_actual]
@@ -390,25 +398,9 @@ def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
                 distancia = (num_tiros - 1) - prev_occ[-1]
                 if distancia <= 6:
                     if st.session_state.s1_hits_tracker.get(num_actual, 0) < 2:
-                        if not any(c['numero'] == num_actual and c['estrategia'] == 1 for c in st.session_state.cacerias_activas):
+                        if not any(c['numero'] == num_actual for c in st.session_state.cacerias_activas):
                             return num_actual, 1
 
-    # 2. Estrategia 2 (3 hits en <= 24 tiros; Ventana Tiros 1 a 35)
-    if num_tiros <= 35:
-        for num in set(tiros_shift):
-            if tiros_shift.count(num) >= 4:
-                continue
-            if num in st.session_state.s2_won_nums:
-                continue
-            prev_hits = st.session_state.crupier_anterior_counts.get(num, 0)
-            if not (1 <= prev_hits <= 2):
-                continue
-            occ = [i for i, x in enumerate(tiros_shift) if x == num]
-            if len(occ) >= 3:
-                if (occ[-1] - occ[-3] + 1) <= 24:
-                    if not any(c['numero'] == num for c in st.session_state.cacerias_activas):
-                        return num, 2
-                        
     return None, None
 
 def registrar_tiro(num, crupier_actual, modo_filtro):
@@ -422,8 +414,6 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         st.session_state.crupier_activo = crupier_actual
         st.session_state.s1_hits_tracker = {}
         st.session_state.s2_won_nums = set()
-        st.session_state.fallos_secos = 0
-        st.session_state.fallos_totales = 0
         st.session_state.cacerias_activas = []
         st.session_state.tiros_turno_actual = []
 
@@ -461,7 +451,6 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
             
             if caza['estrategia'] == 1:
                 st.session_state.s1_hits_tracker[num] = st.session_state.s1_hits_tracker.get(num, 0) + 1
-                # Si es el 1er acierto -> Renovar para el 2º acierto (0 de 7 tiros)
                 if st.session_state.s1_hits_tracker[num] < 2:
                     caza_renovada = dict(caza)
                     caza_renovada['tiros_transcurridos'] = 0
@@ -481,11 +470,6 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
                 
                 st.session_state.crupier_aprendizaje[crupier_actual]['losses'] += 1
                 registrar_movimiento_balance_nube(crupier_actual, pérdida, st.session_state.balance_acumulado_historico)
-                
-                st.session_state.fallos_totales += 1
-                # Solo suma como fallo seco si NUNCA pagó un 1er acierto
-                if not caza.get('es_renovacion_2nd_hit', False):
-                    st.session_state.fallos_secos += 1
             else:
                 cacerias_restantes.append(caza)
                 
@@ -557,8 +541,8 @@ with tab_main:
         
         if tiros_crupier <= 10:
             st.success("🌟 FASE INICIAL (ZONA DE ORO E1): Alta efectividad")
-        elif tiros_crupier <= 20:
-            st.info("🟢 FASE ALTA (TRANSICIÓN E1/E2): Cierre de Estrategia 1")
+        elif tiros_crupier <= 25:
+            st.info("🟢 FASE ALTA (TRANSICIÓN E1/E2): Estrategia 1 activa hasta tiro 25")
         elif tiros_crupier <= 35:
             st.warning("🟡 FASE MEDIA (ZONA EXCLUSIVA E2): Estrategia 1 pausada")
         else:
@@ -596,8 +580,6 @@ with tab_main:
                 st.session_state.cacerias_activas = []
                 st.session_state.s1_hits_tracker = {}
                 st.session_state.s2_won_nums = set()
-                st.session_state.fallos_secos = 0
-                st.session_state.fallos_totales = 0
                 st.success("¡Nuevo día iniciado!")
                 st.rerun()
         with col_b2:
@@ -624,19 +606,19 @@ with tab_main:
             nums_f1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
             for i, n in enumerate(nums_f1):
                 with cols_f1[i]:
-                    render_btn_num(n, crupier_actual, modo_filtro)
+                    render_btn_num(n, crupier_actual, modo_f)
 
             cols_f2 = st.columns(12)
             nums_f2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
             for i, n in enumerate(nums_f2):
                 with cols_f2[i]:
-                    render_btn_num(n, crupier_actual, modo_filtro)
+                    render_btn_num(n, crupier_actual, modo_f)
 
             cols_f3 = st.columns(12)
             nums_f3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
             for i, n in enumerate(nums_f3):
                 with cols_f3[i]:
-                    render_btn_num(n, crupier_actual, modo_filtro)
+                    render_btn_num(n, crupier_actual, modo_f)
         
         st.write("")
         c_bal1, c_bal2, c_pred = st.columns([1.5, 1.5, 3])
@@ -644,7 +626,7 @@ with tab_main:
         with c_bal1:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
             st.metric("Balance del Día", f"{st.session_state.balance_dia:.2f} U")
-            st.caption(f"Fallos turno: {st.session_state.fallos_totales} / 2 máx")
+            st.caption("Fase activa: Tiros 1 a 35")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with c_bal2:
@@ -655,7 +637,7 @@ with tab_main:
             
         with c_pred:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**🎯 APUESTAS RECOMENDADAS**")
+            st.markdown("**🎯 APUESTAS RECOMENDADAS (OPTIMIZADO v5.4)**")
             if not permitido:
                 st.warning(f"🔒 Mesa pausada por filtro de usuario: {motivo_estado}")
             elif st.session_state.cacerias_activas:
@@ -665,7 +647,6 @@ with tab_main:
                     tiro_n = caza['tiros_transcurridos'] + 1
                     lim_t = 7 if strat == 1 else 11
                     
-                    # ETIQUETA VISUAL CLARA PARA 2º ACIERTO
                     if caza.get('es_renovacion_2nd_hit', False):
                         st.error(f"¡APOSTAR AL NÚMERO [{num_caza}]! (Estrategia {strat} - BUSCANDO 2º ACIERTO - Tiro {tiro_n} de {lim_t})")
                     else:
@@ -673,12 +654,8 @@ with tab_main:
             else:
                 if tiros_crupier > 35:
                     st.error("🔒 Silenciador de Seguridad Activo (>35 tiros). Esperando cambio de crupier.")
-                elif st.session_state.fallos_secos >= 1:
-                    st.warning("🔒 Turno bloqueado por 1 fallo seco en 1er intento.")
-                elif st.session_state.fallos_totales >= 2:
-                    st.warning("🔒 Turno bloqueado por acumulación de 2 fallos totales.")
                 else:
-                    st.info("Escaneando patrones por zonas de avance...")
+                    st.info("Escaneando patrones con motor v5.4 (Sin bloqueos ciegos)...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
@@ -770,5 +747,5 @@ with tab_stats:
         st.rerun()
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v5.1 — Visualización de Renovaciones")
-    st.write("Identificación visual explícita de renovaciones para 2º acierto y sincronización con 'Ruleta_Data base'.")
+    st.markdown("### Bot Ruleta Pro v5.4 — Motor de Máximo Pico")
+    st.write("Eliminación de bloqueos ciegos por fallo seco, silenciador de fatiga (>35 tiros) y sincronización total con 'Ruleta_Data base'.")
