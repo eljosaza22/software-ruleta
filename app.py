@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Optimizado v5.4", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - Optimizado v5.4.1", layout="wide")
 
 st.markdown("""
     <style>
@@ -352,7 +352,7 @@ if 'tiros_turno_actual' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO OPTIMIZADO (v5.4 - PICO +1,112 U)
+# 4. MOTOR ADAPTATIVO OPTIMIZADO (v5.4.1)
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
     if modo_filtro == "Modo Elite (Top 15 Sniper)":
@@ -487,20 +487,20 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
 # ==========================================
 # 5. RENDERIZADO DE BOTONES
 # ==========================================
-def render_btn_0(crupier_act, modo_f):
+def render_btn_0(crupier_act, modo_filtro):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
     if st.button("0", key="btn_0"):
-        registrar_tiro(0, crupier_act, modo_f)
+        registrar_tiro(0, crupier_act, modo_filtro)
         st.rerun()
 
-def render_btn_num(n, crupier_act, modo_f):
+def render_btn_num(n, crupier_act, modo_filtro):
     if n in numeros_rojos:
         st.markdown('<div class="marker-red"></div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="marker-black"></div>', unsafe_allow_html=True)
         
     if st.button(f"{n}", key=f"btn_{n}"):
-        registrar_tiro(n, crupier_act, modo_f)
+        registrar_tiro(n, crupier_act, modo_filtro)
         st.rerun()
 
 # ==========================================
@@ -606,19 +606,19 @@ with tab_main:
             nums_f1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
             for i, n in enumerate(nums_f1):
                 with cols_f1[i]:
-                    render_btn_num(n, crupier_actual, modo_f)
+                    render_btn_num(n, crupier_actual, modo_filtro)
 
             cols_f2 = st.columns(12)
             nums_f2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
             for i, n in enumerate(nums_f2):
                 with cols_f2[i]:
-                    render_btn_num(n, crupier_actual, modo_f)
+                    render_btn_num(n, crupier_actual, modo_filtro)
 
             cols_f3 = st.columns(12)
             nums_f3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
             for i, n in enumerate(nums_f3):
                 with cols_f3[i]:
-                    render_btn_num(n, crupier_actual, modo_f)
+                    render_btn_num(n, crupier_actual, modo_filtro)
         
         st.write("")
         c_bal1, c_bal2, c_pred = st.columns([1.5, 1.5, 3])
@@ -637,7 +637,7 @@ with tab_main:
             
         with c_pred:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**🎯 APUESTAS RECOMENDADAS (OPTIMIZADO v5.4)**")
+            st.markdown("**🎯 APUESTAS RECOMENDADAS (OPTIMIZADO v5.4.1)**")
             if not permitido:
                 st.warning(f"🔒 Mesa pausada por filtro de usuario: {motivo_estado}")
             elif st.session_state.cacerias_activas:
@@ -655,7 +655,7 @@ with tab_main:
                 if tiros_crupier > 35:
                     st.error("🔒 Silenciador de Seguridad Activo (>35 tiros). Esperando cambio de crupier.")
                 else:
-                    st.info("Escaneando patrones con motor v5.4 (Sin bloqueos ciegos)...")
+                    st.info("Escaneando patrones con motor v5.4.1 (Sin bloqueos ciegos)...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.divider()
@@ -747,5 +747,5 @@ with tab_stats:
         st.rerun()
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v5.4 — Motor de Máximo Pico")
-    st.write("Eliminación de bloqueos ciegos por fallo seco, silenciador de fatiga (>35 tiros) y sincronización total con 'Ruleta_Data base'.")
+    st.markdown("### Bot Ruleta Pro v5.4.1 — Sin NameError")
+    st.write("Corrección de variable 'modo_filtro' en llamadas del tapete y sincronización con 'Ruleta_Data base'.")
