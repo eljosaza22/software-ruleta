@@ -8,7 +8,7 @@ from datetime import datetime
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA Y ESTILO RETRO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - Optimizado v5.4.1", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - v5.5 Antirretroceso", layout="wide")
 
 st.markdown("""
     <style>
@@ -349,10 +349,20 @@ if 'crupier_activo' not in st.session_state:
 if 'tiros_turno_actual' not in st.session_state:
     st.session_state.tiros_turno_actual = []
 
+# VARIABLES DE ESTADO v5.5 (ALERTAS Y CONTROL DE APUESTAS)
+if 'apuestas_pausadas_manualmente' not in st.session_state:
+    st.session_state.apuestas_pausadas_manualmente = False
+
+if 'fallos_turno_crupier' not in st.session_state:
+    st.session_state.fallos_turno_crupier = 0
+
+if 'historial_resultados_globales' not in st.session_state:
+    st.session_state.historial_resultados_globales = []
+
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO OPTIMIZADO (v5.4.1)
+# 4. MOTOR ADAPTATIVO OPTIMIZADO (v5.5)
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
     if modo_filtro == "Modo Elite (Top 15 Sniper)":
@@ -365,6 +375,9 @@ def evaluar_permiso_crupier(crupier, modo_filtro):
     return True, "Habilitado"
 
 def escanear_disparos(tiros_shift, crupier_actual, modo_filtro):
+    if st.session_state.apuestas_pausadas_manualmente:
+        return None, None
+
     permitido, motivo = evaluar_permiso_crupier(crupier_actual, modo_filtro)
     
     if not permitido:
@@ -414,6 +427,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         st.session_state.crupier_activo = crupier_actual
         st.session_state.s1_hits_tracker = {}
         st.session_state.s2_won_nums = set()
+        st.session_state.fallos_turno_crupier = 0
         st.session_state.cacerias_activas = []
         st.session_state.tiros_turno_actual = []
 
@@ -446,6 +460,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
             st.session_state.balance_history_acumulado.append(st.session_state.balance_acumulado_historico)
             
             st.session_state.crupier_aprendizaje[crupier_actual]['wins'] += 1
+            st.session_state.historial_resultados_globales.append('WIN')
             registrar_movimiento_balance_nube(crupier_actual, ganancia, st.session_state.balance_acumulado_historico)
             st.balloons()
             
@@ -469,6 +484,8 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
                 st.session_state.balance_history_acumulado.append(st.session_state.balance_acumulado_historico)
                 
                 st.session_state.crupier_aprendizaje[crupier_actual]['losses'] += 1
+                st.session_state.fallos_turno_crupier += 1
+                st.session_state.historial_resultados_globales.append('LOSS')
                 registrar_movimiento_balance_nube(crupier_actual, pérdida, st.session_state.balance_acumulado_historico)
             else:
                 cacerias_restantes.append(caza)
@@ -485,7 +502,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         })
 
 # ==========================================
-# 5. RENDERIZADO DE BOTONES
+# 5. RENDERIZADO DE BOTONES DE LA RULETA
 # ==========================================
 def render_btn_0(crupier_act, modo_filtro):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
@@ -580,6 +597,9 @@ with tab_main:
                 st.session_state.cacerias_activas = []
                 st.session_state.s1_hits_tracker = {}
                 st.session_state.s2_won_nums = set()
+                st.session_state.fallos_turno_crupier = 0
+                st.session_state.historial_resultados_globales = []
+                st.session_state.apuestas_pausadas_manualmente = False
                 st.success("¡Nuevo día iniciado!")
                 st.rerun()
         with col_b2:
@@ -637,8 +657,25 @@ with tab_main:
             
         with c_pred:
             st.markdown('<div class="status-box">', unsafe_allow_html=True)
-            st.markdown("**🎯 APUESTAS RECOMENDADAS (OPTIMIZADO v5.4.1)**")
-            if not permitido:
+            
+            # CONTROL MANUAL DE APUESTAS (BOTONES PARAR Y REANUDAR APUESTAS)
+            col_ctrl_1, col_ctrl_2 = st.columns(2)
+            with col_ctrl_1:
+                if st.button("⏸️ PARAR APUESTAS", key="btn_stop_betting", use_container_width=True):
+                    st.session_state.apuestas_pausadas_manualmente = True
+                    st.rerun()
+            with col_ctrl_2:
+                if st.button("▶️ REANUDAR APUESTAS", key="btn_resume_betting", use_container_width=True):
+                    st.session_state.apuestas_pausadas_manualmente = False
+                    st.rerun()
+            
+            st.markdown("---")
+            st.markdown("**🎯 APUESTAS RECOMENDADAS & ESTADO DE SISTEMA**")
+            
+            # ESTADO MANUAL DE APUESTAS
+            if st.session_state.apuestas_pausadas_manualmente:
+                st.warning("⏸️ **APUESTAS PAUSADAS MANUALMENTE.** Haz clic en '▶️ REANUDAR APUESTAS' para volver a activar las recomendaciones.")
+            elif not permitido:
                 st.warning(f"🔒 Mesa pausada por filtro de usuario: {motivo_estado}")
             elif st.session_state.cacerias_activas:
                 for caza in st.session_state.cacerias_activas:
@@ -655,8 +692,47 @@ with tab_main:
                 if tiros_crupier > 35:
                     st.error("🔒 Silenciador de Seguridad Activo (>35 tiros). Esperando cambio de crupier.")
                 else:
-                    st.info("Escaneando patrones con motor v5.4.1 (Sin bloqueos ciegos)...")
+                    st.info("Escaneando patrones de juego...")
+                    
             st.markdown('</div>', unsafe_allow_html=True)
+
+        st.divider()
+
+        # ==========================================
+        # SECCIÓN DE ALERTAS INFORMATIVAS ANTIRRETROCESO (INFORMATIVAS / NO BLOQUEANTES)
+        # ==========================================
+        st.markdown("### 🔔 Avisos y Alertas Antirretroceso (Informativas)")
+        
+        alertas_generadas = False
+        
+        # REGLA 1: Freno por Operador (2 fallos en el mismo turno)
+        if st.session_state.fallos_turno_crupier >= 2:
+            st.warning(f"🛑 **ALERTA REGLA 1 (Freno por Operador):** El crupier **{crupier_actual}** acumula {st.session_state.fallos_turno_crupier} fallos en este turno. *Se recomienda no seguir apostando con este operador.*")
+            alertas_generadas = True
+
+        # REGLA 2: Stop-Loss Diario Rígido (-35 U)
+        if st.session_state.balance_dia <= -35.0:
+            st.error(f"🔴 **ALERTA REGLA 2 (Stop-Loss Diario):** El balance del día cayó a `{st.session_state.balance_dia:.2f} U` (límite recomendado $-35.00\text{ U}$). *Se recomienda CERRAR LA SESIÓN por el día de hoy.*")
+            alertas_generadas = True
+
+        # REGLA 3: Pausa de Marea (2 fallos consecutivos globales)
+        res_glob = st.session_state.historial_resultados_globales
+        if len(res_glob) >= 2 and res_glob[-1] == 'LOSS' and res_glob[-2] == 'LOSS':
+            st.warning("🌊 **ALERTA REGLA 3 (Pausa de Marea):** Se han registrado **2 fallos consecutivos globales**. *Se recomienda pausar el juego durante 15 a 20 minutos.*")
+            alertas_generadas = True
+
+        # REGLA 4: Crupieres Tóxicos en Día Negativo
+        if st.session_state.balance_dia < 0 and crupier_actual in crupieres_toxicos:
+            st.warning(f"🛡️ **ALERTA REGLA 4 (Mesa Fría / Crupier Tóxico):** El balance está en negativo (`{st.session_state.balance_dia:.2f} U`) y la crupier **{crupier_actual}** está clasificada como tóxica. *Se recomienda activar el Filtro Anti-Tóxicos o Modo Elite.*")
+            alertas_generadas = True
+
+        # REGLA 5: Take-Profit Diario (+100 U / +150 U)
+        if st.session_state.balance_dia >= 100.0:
+            st.success(f"🏆 **ALERTA REGLA 5 (Take-Profit Diario):** ¡Alcanzaste una ganancia de `{st.session_state.balance_dia:.2f} U`! *Se recomienda RETIRARSE Y CERRAR EL DÍA para proteger las utilidades.*")
+            alertas_generadas = True
+
+        if not alertas_generadas:
+            st.success("✅ **Parámetros de Riesgo Normales:** No hay alertas activas. El ritmo del turno y la banca se encuentran en rango óptimo.")
 
         st.divider()
 
@@ -728,7 +804,7 @@ with tab_settings:
     st.write(", ".join(st.session_state.lista_crupieres))
 
 with tab_stats:
-    st.subheader("Registro Histórico de Ganancias y Pérdidas Acumuladas")
+    st.subheader("Registro Histórico de Ganancias/Pérdidas")
     
     st.markdown(f"**Balance Acumulado Total Actual:** `{st.session_state.balance_acumulado_historico:.2f} U`")
     
@@ -747,5 +823,5 @@ with tab_stats:
         st.rerun()
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v5.4.1 — Sin NameError")
-    st.write("Corrección de variable 'modo_filtro' en llamadas del tapete y sincronización con 'Ruleta_Data base'.")
+    st.markdown("### Bot Ruleta Pro v5.5 — Alertas Antirretroceso y Control Manual")
+    st.write("Alertas informativas antirretroceso (no bloqueantes), botones de pausar/reanudar apuestas y sincronización con 'Ruleta_Data base'.")
