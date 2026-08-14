@@ -6,24 +6,42 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 # ==========================================
-# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO COMPACTO (ESPAÑOL)
+# 1. CONFIGURACIÓN DE PÁGINA Y ESTILO MEJORADO (ESPAÑOL)
 # ==========================================
-st.set_page_config(page_title="Bot Ruleta Pro - v5.6 Compacto", layout="wide")
+st.set_page_config(page_title="Bot Ruleta Pro - v5.7 HD", layout="wide")
 
 st.markdown("""
     <style>
+    /* Estilo General de Fondo y Tipografía */
     .stApp {
-        background-color: #d4d0c8;
-        font-family: 'Tahoma', 'Segoe UI', sans-serif;
+        background-color: #d8d4cb;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    /* Eliminar espacios excesivos arriba y abajo */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 1.2rem !important;
         max-width: 98% !important;
     }
 
+    /* Pestañas Superiores Claras y Visibles */
+    button[data-baseweb="tab"] {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        color: #2c3e50 !important;
+        background-color: #c8c3b8 !important;
+        border-radius: 8px 8px 0px 0px !important;
+        padding: 8px 16px !important;
+        margin-right: 4px !important;
+    }
+    
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background-color: #0b6623 !important;
+        color: #ffffff !important;
+        border-bottom: 3px solid #ffd700 !important;
+    }
+
+    /* Ocultar Marcadores de CSS Estándar */
     [data-testid="stElementContainer"]:has(.marker-red),
     [data-testid="stElementContainer"]:has(.marker-black),
     [data-testid="stElementContainer"]:has(.marker-green),
@@ -34,39 +52,46 @@ st.markdown("""
         padding: 0px !important;
     }
 
+    /* Tapete Verde Ajustado */
     [data-testid="stElementContainer"]:has(.green-felt-table) + [data-testid="stHorizontalBlock"] {
-        background: linear-gradient(135deg, #0b6623 0%, #064016 100%) !important;
-        padding: 12px 10px !important;
+        background: linear-gradient(135deg, #0b6623 0%, #053311 100%) !important;
+        padding: 14px 12px !important;
         border-radius: 12px !important;
         border: 4px solid #032b0e !important;
         box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 8px rgba(0,0,0,0.3) !important;
-        margin-bottom: 10px !important;
+        margin-bottom: 12px !important;
         align-items: center !important;
     }
 
+    /* Botón Cero (0) */
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%) !important;
         border: 2px solid #ffffff !important;
         border-radius: 10px !important;
-        height: 120px !important;
+        height: 138px !important;
         width: 100% !important;
         box-shadow: 0 3px 6px rgba(0,0,0,0.5) !important;
     }
 
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button * {
         color: #ffffff !important;
-        font-size: 20px !important;
+        font-size: 22px !important;
         font-weight: 900 !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
     }
 
+    /* Botones Rojos - Texto en Una Sola Línea Impecable */
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button {
         background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%) !important;
         border: 2px solid #ffffff !important;
         border-radius: 50% !important;
-        height: 36px !important;
-        width: 36px !important;
-        min-width: 36px !important;
+        height: 42px !important;
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
         margin: 2px auto !important;
+        padding: 0px !important;
         box-shadow: 0 3px 5px rgba(0,0,0,0.4) !important;
         display: flex !important;
         align-items: center !important;
@@ -75,18 +100,23 @@ st.markdown("""
 
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button * {
         color: #ffffff !important;
-        font-size: 13px !important;
+        font-size: 15px !important;
         font-weight: 900 !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
     }
 
+    /* Botones Negros - Texto en Una Sola Línea Impecable */
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button {
-        background: linear-gradient(180deg, #424242 0%, #111111 100%) !important;
+        background: linear-gradient(180deg, #37474f 0%, #111111 100%) !important;
         border: 2px solid #ffffff !important;
         border-radius: 50% !important;
-        height: 36px !important;
-        width: 36px !important;
-        min-width: 36px !important;
+        height: 42px !important;
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
         margin: 2px auto !important;
+        padding: 0px !important;
         box-shadow: 0 3px 5px rgba(0,0,0,0.4) !important;
         display: flex !important;
         align-items: center !important;
@@ -95,16 +125,18 @@ st.markdown("""
 
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button * {
         color: #ffffff !important;
-        font-size: 13px !important;
+        font-size: 15px !important;
         font-weight: 900 !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
     }
 
     [data-testid="stElementContainer"]:has(.marker-red) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-black) + [data-testid="stElementContainer"] button:hover,
     [data-testid="stElementContainer"]:has(.marker-green) + [data-testid="stElementContainer"] button:hover {
-        transform: scale(1.12) !important;
+        transform: scale(1.15) !important;
         border-color: #ffd700 !important;
-        box-shadow: 0 0 10px #ffd700 !important;
+        box-shadow: 0 0 12px #ffd700 !important;
         transition: all 0.12s ease-in-out !important;
     }
     </style>
@@ -360,7 +392,7 @@ if 'historial_resultados_globales' not in st.session_state:
 numeros_rojos = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
 
 # ==========================================
-# 4. MOTOR ADAPTATIVO OPTIMIZADO (v5.6 COMPACTO)
+# 4. MOTOR ADAPTATIVO OPTIMIZADO
 # ==========================================
 def evaluar_permiso_crupier(crupier, modo_filtro):
     if modo_filtro == "Modo Elite (Top 15 Sniper)":
@@ -497,7 +529,7 @@ def registrar_tiro(num, crupier_actual, modo_filtro):
         })
 
 # ==========================================
-# 5. RENDERIZADO DE BOTONES DE LA RULETA (COMPACTOS)
+# 5. RENDERIZADO DE BOTONES DE LA RULETA (HD COMPACTO)
 # ==========================================
 def render_btn_0(crupier_act, modo_filtro):
     st.markdown('<div class="marker-green"></div>', unsafe_allow_html=True)
@@ -516,23 +548,23 @@ def render_btn_num(n, crupier_act, modo_filtro):
         st.rerun()
 
 # ==========================================
-# 6. INTERFAZ DE USUARIO ULTRA COMPACTA
+# 6. INTERFAZ DE USUARIO V5.7 HD
 # ==========================================
 
 tab_main, tab_settings, tab_stats, tab_about = st.tabs([
-    "Panel Principal (Ruleta_Data base)", 
-    "Configuración y Crupieres", 
-    "Histórico de Ganancias/Pérdidas", 
-    "Acerca del Sistema"
+    "🎯 Panel Principal (Ruleta_Data base)", 
+    "⚙️ Configuración y Crupieres", 
+    "📊 Histórico de Ganancias/Pérdidas", 
+    "ℹ️ Acerca del Sistema"
 ])
 
 with tab_main:
     col_left, col_right = st.columns([1, 3.2])
     
     with col_left:
-        st.markdown("### ⚙️ Control")
+        st.markdown("### ⚙️ Control de Mesa")
         crupier_actual = st.selectbox("— Crupier Activo —", st.session_state.lista_crupieres)
-        modo_filtro = st.selectbox("— Modo —", ["🌐 Todos los Crupieres", "🛡️ Filtro Anti-Tóxicos", "🎯 Modo Elite (Top 15)"])
+        modo_filtro = st.selectbox("— Modo de Juego —", ["🌐 Todos los Crupieres", "🛡️ Filtro Anti-Tóxicos", "🎯 Modo Elite (Top 15 Sniper)"])
         
         permitido, motivo_estado = evaluar_permiso_crupier(crupier_actual, modo_filtro)
         if permitido:
@@ -578,11 +610,11 @@ with tab_main:
                     borrar_ultimo_movimiento_balance_nube()
                     st.rerun()
 
-        st.markdown("**Gráfico Día**")
+        st.markdown("**Tendencia de Balance (Sesión)**")
         df_chart_dia = pd.DataFrame({'Día': st.session_state.balance_history_dia})
         st.line_chart(df_chart_dia, height=90)
 
-    # TAPETE PRINCIPAL Y MÉTRICAS
+    # TAPETE PRINCIPAL Y SECCIÓN DE APUESTAS
     with col_right:
         st.markdown('<div class="green-felt-table"></div>', unsafe_allow_html=True)
         
@@ -610,8 +642,8 @@ with tab_main:
                 with cols_f3[i]:
                     render_btn_num(n, crupier_actual, modo_filtro)
         
-        # FILA COMPACTA DE MÉTRICAS Y BOTONES
-        c_m1, c_m2, c_ctrl, c_rec = st.columns([1.2, 1.2, 1.6, 2.5])
+        # FILA DE MÉTRICAS Y RECOMENDADOR
+        c_m1, c_m2, c_ctrl, c_rec = st.columns([1.1, 1.1, 1.5, 2.5])
         
         with c_m1:
             st.metric("Balance Día", f"{st.session_state.balance_dia:.1f} U")
@@ -651,7 +683,7 @@ with tab_main:
                 else:
                     st.info("Escaneando patrones...")
 
-        # AVISOS ANTIRRETROCESO COMPACTOS
+        # AVISOS ANTIRRETROCESO
         res_glob = st.session_state.historial_resultados_globales
         if st.session_state.fallos_turno_crupier >= 2:
             st.warning(f"🛑 **ALERTA REGLA 1:** {crupier_actual} suma {st.session_state.fallos_turno_crupier} fallos en este turno.")
@@ -664,15 +696,15 @@ with tab_main:
         if st.session_state.balance_dia >= 100.0:
             st.success(f"🏆 **ALERTA REGLA 5:** Meta alcanzada (`{st.session_state.balance_dia:.1f} U`). Se sugiere retirar ganancias.")
 
-        # HISTORIAL DE TIRADAS DEL DÍA (NÚMEROS REGISTRADOS DIRECTAMENTE VISIBLES)
-        st.markdown("#### 📜 Números Registrados en el Día")
+        # HISTORIAL DE TIRADAS DEL DÍA (COMPACTO Y LEGIBLE)
+        st.markdown("#### 📜 Números Registrados en la Sesión")
         if st.session_state.historial_sesion:
-            col_t1, col_t2 = st.columns([2.2, 1])
+            col_t1, col_t2 = st.columns([2.3, 1])
             with col_t1:
                 df_hist_main = pd.DataFrame(list(reversed(st.session_state.historial_sesion)))
                 df_hist_main.index = range(len(df_hist_main), 0, -1)
                 df_hist_main.columns = ['Crupier', 'Número', 'Hora']
-                st.dataframe(df_hist_main[['Hora', 'Crupier', 'Número']], height=140, use_container_width=True)
+                st.dataframe(df_hist_main[['Hora', 'Crupier', 'Número']], height=160, use_container_width=True)
             with col_t2:
                 total_tiros = len(st.session_state.historial_sesion)
                 nums_list = [t['numero'] for t in st.session_state.historial_sesion]
@@ -682,7 +714,7 @@ with tab_main:
                 st.caption(f"**Total Tiradas:** {total_tiros}")
                 st.caption(f"🔴 **Rojos:** {rojos_cnt} | ⬛ **Negros:** {negros_cnt} | 🟢 **0:** {ceros_cnt}")
         else:
-            st.caption("No hay tiradas registradas aún en el día.")
+            st.caption("No hay tiradas registradas aún en la sesión.")
 
 with tab_settings:
     st.subheader("Gestión de Crupieres")
@@ -728,5 +760,5 @@ with tab_stats:
         st.rerun()
 
 with tab_about:
-    st.markdown("### Bot Ruleta Pro v5.6 — Diseño Ultra Compacto")
-    st.write("Interfaz reorganizada para visualización inmediata de números ingresados sin desplazamiento vertical.")
+    st.markdown("### Bot Ruleta Pro v5.7 HD — Pestañas Claras y Números Nítidos")
+    st.write("Interfaz en alta definición con números perfectamente alineados en una sola línea y navegación superior resaltar.")
